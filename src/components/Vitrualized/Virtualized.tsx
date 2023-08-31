@@ -36,10 +36,7 @@ export const Virtualized = () => {
 
 		const endIndex = Math.min(Math.ceil(scrolledRows + OVERSCAN + CONTAINER_HEIGHT / ROW_HEIGHT), allRowsNumber);
 		// const end = Math.min(
-		// 	values.findIndex(value => {
-		// 		console.log(value.offset);
-		// 		return cache.current[startIndex + OVERSCAN].offset + CONTAINER_HEIGHT <= value.offset;
-		// 	}) + OVERSCAN,
+		// 	values.findIndex(value => cache.current[startIndex + OVERSCAN] + CONTAINER_HEIGHT <= value) + OVERSCAN,
 		// 	allRowsNumber
 		// );
 		// console.log(end);
