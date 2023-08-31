@@ -53,7 +53,7 @@ export const Virtualized = () => {
 	const refHandler = (index: number) => (entry: HTMLDivElement | null) => {
 		if (!entry || index in cache.current) return;
 		cache.current[index] = offset.current;
-		offset.current = offset.current + entry?.clientHeight || 0;
+		offset.current = offset.current + entry.clientHeight || 0;
 	};
 
 	const scrollHandler = (evt: UIEvent<HTMLDivElement>) => setScroll(evt.currentTarget.scrollTop);
