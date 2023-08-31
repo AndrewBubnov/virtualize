@@ -56,7 +56,7 @@ export const Virtualized = () => {
 	const refHandler = (index: number) => (entry: HTMLDivElement | null) => {
 		if (!entry || cache.current[index]) return;
 		const height = entry?.clientHeight || 0;
-		cache.current = { ...cache.current, [index]: { offset: offset.current } };
+		cache.current[index] = { offset: offset.current };
 		offset.current = offset.current + height;
 	};
 
