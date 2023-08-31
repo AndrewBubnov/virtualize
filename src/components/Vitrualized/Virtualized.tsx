@@ -21,7 +21,7 @@ const items = Array.from(
 
 export const Virtualized = () => {
 	const [scroll, setScroll] = useState<number>(0);
-	const cache = useRef<{ [key: number]: { offset: number } }>({});
+	const cache = useRef<{ [key: number]: number }>({});
 	const offset = useRef<number>(0);
 
 	const allRowsNumber = useMemo(() => items.length, []);
@@ -29,7 +29,7 @@ export const Virtualized = () => {
 	const virtualizedRows = useMemo(() => {
 		const values = Object.values(cache.current) as Array<(typeof cache.current)[keyof typeof cache.current]>;
 		const scrolledRows = Math.max(
-			values.findIndex(value => scroll < value.offset),
+			values.findIndex(value => scroll < value),
 			0
 		);
 		const startIndex = Math.max(scrolledRows - OVERSCAN, 0);
@@ -48,15 +48,15 @@ export const Virtualized = () => {
 			return {
 				text: item,
 				index: currentIndex,
-				transform: cache.current[currentIndex]?.offset || 0,
+				transform: cache.current[currentIndex] || 0,
 			};
 		});
 	}, [allRowsNumber, scroll]);
 
 	const refHandler = (index: number) => (entry: HTMLDivElement | null) => {
-		if (!entry || cache.current[index]) return;
+		if (!entry || index in cache.current) return;
 		const height = entry?.clientHeight || 0;
-		cache.current[index] = { offset: offset.current };
+		cache.current[index] = offset.current;
 		offset.current = offset.current + height;
 	};
 
