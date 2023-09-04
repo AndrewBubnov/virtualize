@@ -30,10 +30,10 @@ export const Virtualized = () => {
 	const virtualizedRows = useMemo(() => {
 		const lastSet = cache.current.at(-1)?.offset || 1;
 		if (scroll > lastSet) {
-			let sum = lastSet;
+			let offset = lastSet;
 			const additional = Array.from({ length: items.length - cache.current.length }, () => 0).map((_, index) => {
-				sum = index ? sum + ESTIMATED_ROW_HEIGHT : sum;
-				return { offset: index ? sum + ESTIMATED_ROW_HEIGHT : sum, measured: false };
+				offset = offset + ESTIMATED_ROW_HEIGHT;
+				return { offset, measured: false };
 			});
 			cache.current = cache.current.concat(additional);
 		}
@@ -42,6 +42,7 @@ export const Virtualized = () => {
 			cache.current.findIndex(value => scroll < value.offset),
 			0
 		);
+
 		const startIndex = Math.max(scrolledRows - OVERSCAN, 0);
 
 		const endIndex = Math.min(
