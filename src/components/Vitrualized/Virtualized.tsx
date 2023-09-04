@@ -4,7 +4,7 @@ import { loremIpsum } from 'lorem-ipsum';
 import { clsx } from 'clsx';
 
 const CONTAINER_HEIGHT = 550;
-const ROW_HEIGHT = 40;
+const ESTIMATED_ROW_HEIGHT = 50;
 const OVERSCAN = 2;
 
 const items = Array.from(
@@ -21,25 +21,36 @@ const items = Array.from(
 
 export const Virtualized = () => {
 	const [scroll, setScroll] = useState<number>(0);
-	const cache = useRef<{ [key: number]: number }>({});
+	const cache = useRef<number[]>([]);
 	const offset = useRef<number>(0);
 
 	const allRowsNumber = useMemo(() => items.length, []);
 
 	const virtualizedRows = useMemo(() => {
-		const values = Object.values(cache.current) as Array<(typeof cache.current)[keyof typeof cache.current]>;
+		const lastSet = cache.current.at(-1) || 1;
+		if (scroll > lastSet) {
+			let sum = lastSet;
+			const additional = Array.from({ length: items.length - cache.current.length }, () => 0).map((_, index) => {
+				sum = index ? sum + ESTIMATED_ROW_HEIGHT : sum;
+				return index ? sum + ESTIMATED_ROW_HEIGHT : sum;
+			});
+			cache.current = cache.current.concat(additional);
+		}
+
 		const scrolledRows = Math.max(
-			values.findIndex(value => scroll < value),
+			cache.current.findIndex(value => scroll < value),
 			0
 		);
 		const startIndex = Math.max(scrolledRows - OVERSCAN, 0);
 
-		const endIndex = Math.min(Math.ceil(scrolledRows + OVERSCAN + CONTAINER_HEIGHT / ROW_HEIGHT), allRowsNumber);
+		const endIndex = Math.min(
+			Math.ceil(scrolledRows + OVERSCAN + CONTAINER_HEIGHT / ESTIMATED_ROW_HEIGHT),
+			allRowsNumber
+		);
 		// const end = Math.min(
 		// 	values.findIndex(value => cache.current[startIndex + OVERSCAN] + CONTAINER_HEIGHT <= value) + OVERSCAN,
 		// 	allRowsNumber
 		// );
-		// console.log(end);
 		return items.slice(startIndex, endIndex + 1).map((item, index) => {
 			const currentIndex = startIndex + index;
 			return {
@@ -51,16 +62,16 @@ export const Virtualized = () => {
 	}, [allRowsNumber, scroll]);
 
 	const refHandler = (index: number) => (entry: HTMLDivElement | null) => {
-		if (!entry || index in cache.current) return;
+		if (!entry || index < cache.current.length) return;
 		cache.current[index] = offset.current;
-		offset.current = offset.current + entry.clientHeight || 0;
+		offset.current = offset.current + entry.clientHeight;
 	};
 
 	const scrollHandler = (evt: UIEvent<HTMLDivElement>) => setScroll(evt.currentTarget.scrollTop);
 
 	return (
 		<div onScroll={scrollHandler} className={styles.container} style={{ height: `${CONTAINER_HEIGHT}px` }}>
-			<div style={{ height: `${allRowsNumber * ROW_HEIGHT}px` }}>
+			<div style={{ height: `${allRowsNumber * ESTIMATED_ROW_HEIGHT}px` }}>
 				{virtualizedRows.map(element => {
 					return (
 						<div
