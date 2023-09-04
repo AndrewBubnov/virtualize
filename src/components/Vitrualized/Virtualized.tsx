@@ -21,24 +21,24 @@ const items = Array.from(
 
 export const Virtualized = () => {
 	const [scroll, setScroll] = useState<number>(0);
-	const cache = useRef<number[]>([]);
+	const cache = useRef<{ offset: number; measured: boolean }[]>([]);
 	const offset = useRef<number>(0);
 
 	const allRowsNumber = useMemo(() => items.length, []);
 
 	const virtualizedRows = useMemo(() => {
-		const lastSet = cache.current.at(-1) || 1;
+		const lastSet = cache.current.at(-1)?.offset || 1;
 		if (scroll > lastSet) {
 			let sum = lastSet;
 			const additional = Array.from({ length: items.length - cache.current.length }, () => 0).map((_, index) => {
 				sum = index ? sum + ESTIMATED_ROW_HEIGHT : sum;
-				return index ? sum + ESTIMATED_ROW_HEIGHT : sum;
+				return { offset: index ? sum + ESTIMATED_ROW_HEIGHT : sum, measured: false };
 			});
 			cache.current = cache.current.concat(additional);
 		}
 
 		const scrolledRows = Math.max(
-			cache.current.findIndex(value => scroll < value),
+			cache.current.findIndex(value => scroll < value.offset),
 			0
 		);
 		const startIndex = Math.max(scrolledRows - OVERSCAN, 0);
@@ -56,14 +56,14 @@ export const Virtualized = () => {
 			return {
 				text: item,
 				index: currentIndex,
-				transform: cache.current[currentIndex] || 0,
+				transform: cache.current[currentIndex]?.offset || 0,
 			};
 		});
 	}, [allRowsNumber, scroll]);
 
 	const refHandler = (index: number) => (entry: HTMLDivElement | null) => {
-		if (!entry || index < cache.current.length) return;
-		cache.current[index] = offset.current;
+		if (!entry || cache.current[index]?.measured) return;
+		cache.current[index] = { offset: offset.current, measured: true };
 		offset.current = offset.current + entry.clientHeight;
 	};
 
