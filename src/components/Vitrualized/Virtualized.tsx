@@ -23,7 +23,7 @@ export const Virtualized = () => {
 	const [scroll, setScroll] = useState<number>(0);
 	const cache = useRef<{ offset: number; measured: boolean }[]>([]);
 	const offset = useRef<number>(0);
-	const containerHeight = useRef<number>(items.length * ESTIMATED_ROW_HEIGHT);
+	const scrollHeight = useRef<number>(items.length * ESTIMATED_ROW_HEIGHT);
 
 	const allRowsNumber = useMemo(() => items.length, []);
 
@@ -62,7 +62,7 @@ export const Virtualized = () => {
 	const refHandler = (index: number) => (entry: HTMLDivElement | null) => {
 		if (!entry || cache.current[index]?.measured) return;
 		cache.current[index] = { offset: offset.current, measured: true };
-		containerHeight.current = containerHeight.current + entry.clientHeight - ESTIMATED_ROW_HEIGHT;
+		scrollHeight.current = scrollHeight.current + entry.clientHeight - ESTIMATED_ROW_HEIGHT;
 		offset.current = offset.current + entry.clientHeight;
 	};
 
@@ -70,7 +70,7 @@ export const Virtualized = () => {
 
 	return (
 		<div onScroll={scrollHandler} className={styles.container} style={{ height: `${CONTAINER_HEIGHT}px` }}>
-			<div style={{ height: `${containerHeight.current}px` }}>
+			<div style={{ height: `${scrollHeight.current}px` }}>
 				{virtualizedRows.map(element => {
 					return (
 						<div
