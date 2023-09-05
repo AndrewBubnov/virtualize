@@ -31,10 +31,12 @@ export const Virtualized = () => {
 		const lastSet = cache.current.at(-1)?.offset || 1;
 		if (scroll > lastSet) {
 			let offset = lastSet;
-			const additional = Array.from({ length: items.length - cache.current.length }, () => 0).map((_, index) => {
-				offset = offset + ESTIMATED_ROW_HEIGHT;
-				return { offset, measured: false };
-			});
+			const additional = Array(items.length - cache.current.length)
+				.fill(0)
+				.map(() => {
+					offset = offset + ESTIMATED_ROW_HEIGHT;
+					return { offset, measured: false };
+				});
 			cache.current = cache.current.concat(additional);
 		}
 
