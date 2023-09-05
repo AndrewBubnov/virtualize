@@ -1,43 +1,26 @@
-import styles from './Virtualized.module.css';
 import { useMemo, useRef, useState, UIEvent } from 'react';
-import { loremIpsum } from 'lorem-ipsum';
 import { clsx } from 'clsx';
+import { CONTAINER_HEIGHT, ESTIMATED_ROW_HEIGHT, OVERSCAN } from 'constants.ts';
+import { getAdditional } from 'utils/getAdditional.ts';
+import styles from './Virtualized.module.css';
 
-const CONTAINER_HEIGHT = 550;
-const ESTIMATED_ROW_HEIGHT = 50;
-const OVERSCAN = 2;
+interface VirtualizedProps {
+	items: string[];
+}
 
-const items = Array.from(
-	{ length: 1_000 },
-	(_, i) =>
-		`${i + 1}. ${loremIpsum({
-			format: 'plain',
-			paragraphLowerBound: 3,
-			paragraphUpperBound: 7,
-			sentenceLowerBound: 5,
-			sentenceUpperBound: 35,
-		})}`
-);
-
-export const Virtualized = () => {
+export const Virtualized = ({ items }: VirtualizedProps) => {
 	const [scroll, setScroll] = useState<number>(0);
 	const cache = useRef<{ offset: number; measured: boolean }[]>([]);
 	const offset = useRef<number>(0);
 	const scrollHeight = useRef<number>(items.length * ESTIMATED_ROW_HEIGHT);
 
-	const allRowsNumber = useMemo(() => items.length, []);
+	const allRowsNumber = useMemo(() => items.length, [items.length]);
 
 	const virtualizedRows = useMemo(() => {
 		const lastSet = cache.current.at(-1)?.offset || 1;
-		if (scroll > lastSet) {
-			let offset = lastSet;
-			const additional = Array(items.length - cache.current.length)
-				.fill(0)
-				.map(() => {
-					offset = offset + ESTIMATED_ROW_HEIGHT;
-					return { offset, measured: false };
-				});
-			cache.current = cache.current.concat(additional);
+
+		if (scroll > lastSet && cache.current.length < items.length) {
+			cache.current = cache.current.concat(getAdditional(items.length - cache.current.length, lastSet));
 		}
 
 		const scrolledRows = Math.max(
@@ -60,7 +43,7 @@ export const Virtualized = () => {
 				transform: cache.current[currentIndex]?.offset || 0,
 			};
 		});
-	}, [allRowsNumber, scroll]);
+	}, [allRowsNumber, items, scroll]);
 
 	const refHandler = (index: number) => (entry: HTMLDivElement | null) => {
 		if (!entry || cache.current[index]?.measured) return;
