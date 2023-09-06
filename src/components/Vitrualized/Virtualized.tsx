@@ -1,30 +1,24 @@
 import { useMemo, useRef, useState, UIEvent } from 'react';
-import { clsx } from 'clsx';
 import { CONTAINER_HEIGHT, ESTIMATED_ROW_HEIGHT, OVERSCAN } from 'constants.ts';
-import { getAdditional } from 'utils/getAdditional.ts';
+import { getInitCache } from '../../utils/getInitCache.ts';
 import styles from './Virtualized.module.css';
 
 interface VirtualizedProps {
 	items: string[];
 }
+type Cache = { offset: number; height: number; measured: boolean }[];
 
 export const Virtualized = ({ items }: VirtualizedProps) => {
 	const allRowsNumber = useMemo(() => items.length, [items.length]);
 
 	const [scroll, setScroll] = useState<number>(0);
+	const [cache, setCache] = useState<Cache>(getInitCache(items.length));
 
-	const cache = useRef<{ offset: number; height: number; measured: boolean }[]>([]);
 	const scrollHeight = useRef<number>(allRowsNumber * ESTIMATED_ROW_HEIGHT);
 
 	const virtualizedRows = useMemo(() => {
-		const lastSet = cache.current.at(-1)?.offset || 1;
-
-		if (scroll > lastSet && cache.current.length < items.length) {
-			cache.current = cache.current.concat(getAdditional(allRowsNumber - cache.current.length, lastSet));
-		}
-
 		const scrolledRows = Math.max(
-			cache.current.findIndex(value => scroll < value.offset),
+			cache.findIndex(value => scroll < value.offset),
 			0
 		);
 
@@ -40,17 +34,20 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 			return {
 				text: item,
 				index: currentIndex,
-				transform: cache.current[currentIndex]?.offset || 0,
+				transform: cache[currentIndex]?.offset || 0,
 			};
 		});
-	}, [allRowsNumber, items, scroll]);
+	}, [allRowsNumber, cache, items, scroll]);
 
 	const refHandler = (index: number) => (entry: HTMLDivElement | null) => {
-		const { current } = cache;
-		if (!entry || current[index]?.measured) return;
-		const prevOffset = current[index - 1]?.offset || 0;
-		const prevHeight = current[index - 1]?.height || 0;
-		current[index] = { offset: prevOffset + prevHeight, height: entry.clientHeight, measured: true };
+		if (!entry || cache[index]?.measured) return;
+
+		setCache(state => {
+			const prevOffset = state[index - 1]?.offset || 0;
+			const prevHeight = state[index - 1]?.height || 0;
+			state[index] = { offset: prevOffset + prevHeight, height: entry.clientHeight, measured: true };
+			return [...state];
+		});
 		scrollHeight.current = scrollHeight.current + entry.clientHeight - ESTIMATED_ROW_HEIGHT;
 	};
 
@@ -63,10 +60,8 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 					return (
 						<div
 							key={element.index}
-							className={clsx(styles.row, { [styles.absolute]: element.transform })}
-							style={{
-								transform: `translateY(${element.transform}px)`,
-							}}
+							className={styles.row}
+							style={{ transform: `translateY(${element.transform}px)` }}
 							ref={refHandler(element.index)}
 						>
 							{element.text}
