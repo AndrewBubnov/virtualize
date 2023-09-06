@@ -9,18 +9,18 @@ interface VirtualizedProps {
 }
 
 export const Virtualized = ({ items }: VirtualizedProps) => {
-	const [scroll, setScroll] = useState<number>(0);
-	const cache = useRef<{ offset: number; measured: boolean }[]>([]);
-	const offset = useRef<number>(0);
-	const scrollHeight = useRef<number>(items.length * ESTIMATED_ROW_HEIGHT);
-
 	const allRowsNumber = useMemo(() => items.length, [items.length]);
+
+	const [scroll, setScroll] = useState<number>(0);
+
+	const cache = useRef<{ offset: number; height: number; measured: boolean }[]>([]);
+	const scrollHeight = useRef<number>(allRowsNumber * ESTIMATED_ROW_HEIGHT);
 
 	const virtualizedRows = useMemo(() => {
 		const lastSet = cache.current.at(-1)?.offset || 1;
 
 		if (scroll > lastSet && cache.current.length < items.length) {
-			cache.current = cache.current.concat(getAdditional(items.length - cache.current.length, lastSet));
+			cache.current = cache.current.concat(getAdditional(allRowsNumber - cache.current.length, lastSet));
 		}
 
 		const scrolledRows = Math.max(
@@ -46,10 +46,12 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 	}, [allRowsNumber, items, scroll]);
 
 	const refHandler = (index: number) => (entry: HTMLDivElement | null) => {
-		if (!entry || cache.current[index]?.measured) return;
-		cache.current[index] = { offset: offset.current, measured: true };
+		const { current } = cache;
+		if (!entry || current[index]?.measured) return;
+		const prevOffset = current[index - 1]?.offset || 0;
+		const prevHeight = current[index - 1]?.height || 0;
+		current[index] = { offset: prevOffset + prevHeight, height: entry.clientHeight, measured: true };
 		scrollHeight.current = scrollHeight.current + entry.clientHeight - ESTIMATED_ROW_HEIGHT;
-		offset.current = offset.current + entry.clientHeight;
 	};
 
 	const scrollHandler = (evt: UIEvent<HTMLDivElement>) => setScroll(evt.currentTarget.scrollTop);
