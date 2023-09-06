@@ -39,16 +39,24 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 		});
 	}, [allRowsNumber, cache, items, scroll]);
 
+	const scrollHeightHandler = (height: number) => {
+		scrollHeight.current = scrollHeight.current + height - ESTIMATED_ROW_HEIGHT;
+	};
+
 	const refHandler = (index: number) => (entry: HTMLDivElement | null) => {
 		if (!entry || cache[index]?.measured) return;
 
 		setCache(state => {
 			const prevOffset = state[index - 1]?.offset || 0;
 			const prevHeight = state[index - 1]?.height || 0;
-			state[index] = { offset: prevOffset + prevHeight, height: entry.clientHeight, measured: true };
-			return [...state];
+			return [
+				...state.slice(0, index),
+				{ offset: prevOffset + prevHeight, height: entry.clientHeight, measured: true },
+				...state.slice(index + 1),
+			];
 		});
-		scrollHeight.current = scrollHeight.current + entry.clientHeight - ESTIMATED_ROW_HEIGHT;
+
+		scrollHeightHandler(entry.clientHeight);
 	};
 
 	const scrollHandler = (evt: UIEvent<HTMLDivElement>) => setScroll(evt.currentTarget.scrollTop);
@@ -56,18 +64,16 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 	return (
 		<div onScroll={scrollHandler} className={styles.container} style={{ height: `${CONTAINER_HEIGHT}px` }}>
 			<div style={{ height: `${scrollHeight.current}px` }}>
-				{virtualizedRows.map(element => {
-					return (
-						<div
-							key={element.index}
-							className={styles.row}
-							style={{ transform: `translateY(${element.transform}px)` }}
-							ref={refHandler(element.index)}
-						>
-							{element.text}
-						</div>
-					);
-				})}
+				{virtualizedRows.map(element => (
+					<div
+						key={element.index}
+						className={styles.row}
+						style={{ transform: `translateY(${element.transform}px)` }}
+						ref={refHandler(element.index)}
+					>
+						{element.text}
+					</div>
+				))}
 			</div>
 		</div>
 	);
