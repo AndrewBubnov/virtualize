@@ -68,7 +68,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 					<div
 						key={element.index}
 						className={styles.row}
-						style={{ transform: `translateY(${element.transform}px)` }}
+						style={{ transform: `translate3d(0, ${element.transform}px, 0)` }}
 						ref={refHandler(element.index)}
 					>
 						{element.text}
