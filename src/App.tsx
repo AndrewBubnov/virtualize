@@ -5,7 +5,7 @@ import { loremIpsum } from 'lorem-ipsum';
 const items = Array.from(
 	{ length: 1_000 },
 	(_, i) =>
-		`${i + 1}. ${loremIpsum({
+		`${i}. ${loremIpsum({
 			format: 'plain',
 			paragraphLowerBound: 3,
 			paragraphUpperBound: 7,

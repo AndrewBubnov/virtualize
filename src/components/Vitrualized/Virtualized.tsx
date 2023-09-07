@@ -1,20 +1,19 @@
-import { useMemo, useRef, useState, UIEvent } from 'react';
+import { useMemo, useState, UIEvent } from 'react';
 import { CONTAINER_HEIGHT, ESTIMATED_ROW_HEIGHT, OVERSCAN } from 'constants.ts';
 import { getInitCache } from '../../utils/getInitCache.ts';
 import styles from './Virtualized.module.css';
+import { AutoSizer } from '../AutoSizer/Autosizer.tsx';
 
 interface VirtualizedProps {
 	items: string[];
 }
-type Cache = { offset: number; height: number; measured: boolean }[];
+type Cache = { offset: number; height: number }[];
 
 export const Virtualized = ({ items }: VirtualizedProps) => {
 	const allRowsNumber = useMemo(() => items.length, [items.length]);
 
 	const [scroll, setScroll] = useState<number>(0);
 	const [cache, setCache] = useState<Cache>(getInitCache(items.length));
-
-	const scrollHeight = useRef<number>(allRowsNumber * ESTIMATED_ROW_HEIGHT);
 
 	const virtualizedRows = useMemo(() => {
 		const scrolledRows = Math.max(
@@ -39,40 +38,25 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 		});
 	}, [allRowsNumber, cache, items, scroll]);
 
-	const scrollHeightHandler = (height: number) => {
-		scrollHeight.current = scrollHeight.current + height - ESTIMATED_ROW_HEIGHT;
-	};
+	const containerHeight = useMemo(() => Object.values(cache).reduce((acc, cur) => acc + cur.height, 0), [cache]);
 
-	const refHandler = (index: number) => (entry: HTMLDivElement | null) => {
-		if (!entry || cache[index]?.measured) return;
+	const refHandler = (index: number) => (height: number) => {
+		const prevOffset = cache[index - 1]?.offset || 0;
+		const prevHeight = cache[index - 1]?.height || 0;
+		const offset = prevOffset + prevHeight;
 
-		setCache(state => {
-			const prevOffset = state[index - 1]?.offset || 0;
-			const prevHeight = state[index - 1]?.height || 0;
-			return [
-				...state.slice(0, index),
-				{ offset: prevOffset + prevHeight, height: entry.clientHeight, measured: true },
-				...state.slice(index + 1),
-			];
-		});
+		if (cache[index]?.offset === offset && cache[index]?.height === height) return;
 
-		scrollHeightHandler(entry.clientHeight);
+		setCache(state => [...state.slice(0, index), { offset, height }, ...state.slice(index + 1)]);
 	};
 
 	const scrollHandler = (evt: UIEvent<HTMLDivElement>) => setScroll(evt.currentTarget.scrollTop);
 
 	return (
 		<div onScroll={scrollHandler} className={styles.container} style={{ height: `${CONTAINER_HEIGHT}px` }}>
-			<div style={{ height: `${scrollHeight.current}px` }}>
-				{virtualizedRows.map(element => (
-					<div
-						key={element.index}
-						className={styles.row}
-						style={{ transform: `translate3d(0, ${element.transform}px, 0)` }}
-						ref={refHandler(element.index)}
-					>
-						{element.text}
-					</div>
+			<div style={{ height: `${containerHeight}px` }}>
+				{virtualizedRows.map(el => (
+					<AutoSizer key={el.index} element={el} resizeHandler={refHandler(el.index)} />
 				))}
 			</div>
 		</div>

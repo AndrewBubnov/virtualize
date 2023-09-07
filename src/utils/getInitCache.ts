@@ -4,6 +4,6 @@ export const getInitCache = (length: number) => {
 	return new Array(length).fill(0).map(() => {
 		const prevOffset = offset;
 		offset = offset + ESTIMATED_ROW_HEIGHT;
-		return { offset: prevOffset, height: ESTIMATED_ROW_HEIGHT, measured: false };
+		return { offset: prevOffset, height: ESTIMATED_ROW_HEIGHT };
 	});
 };
