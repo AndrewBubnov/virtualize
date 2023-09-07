@@ -1,4 +1,4 @@
-import styles from '../Vitrualized/Virtualized.module.css';
+import styles from './AutoSizer.module.css';
 import { useLayoutEffect, useRef } from 'react';
 
 interface AutoSizerProps {
@@ -6,16 +6,13 @@ interface AutoSizerProps {
 		text: string;
 		transform: number;
 	};
-	resizeHandler(height: number): void;
+	heightSetter(height: number): void;
 }
 
-export const AutoSizer = ({ element, resizeHandler }: AutoSizerProps) => {
+export const AutoSizer = ({ element, heightSetter }: AutoSizerProps) => {
 	const ref = useRef<HTMLDivElement | null>(null);
 
-	useLayoutEffect(() => {
-		if (!ref.current) return;
-		resizeHandler(ref.current.clientHeight);
-	}, [resizeHandler]);
+	useLayoutEffect(() => heightSetter(ref.current?.clientHeight || 0), [heightSetter]);
 
 	return (
 		<div className={styles.row} style={{ transform: `translate3d(0, ${element.transform}px, 0)` }} ref={ref}>

@@ -3,9 +3,3 @@
     width: 500px;
     overflow-y: auto;
 }
-
-.row {
-    position: absolute;
-    top: 0;
-    padding: 7px 0;
-}
