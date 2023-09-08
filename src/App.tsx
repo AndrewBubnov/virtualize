@@ -3,7 +3,7 @@ import { Virtualized } from './components/Vitrualized/Virtualized.tsx';
 import { loremIpsum } from 'lorem-ipsum';
 
 const items = Array.from(
-	{ length: 1_000 },
+	{ length: 100_000 },
 	(_, i) =>
 		`${i}. ${loremIpsum({
 			format: 'plain',
