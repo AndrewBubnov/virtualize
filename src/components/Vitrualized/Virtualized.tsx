@@ -38,6 +38,10 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 		});
 	}, [allRowsNumber, items, scroll]);
 
+	const containerHeightHandler = (height: number) => {
+		containerHeight.current = containerHeight.current + height - ESTIMATED_ROW_HEIGHT;
+	};
+
 	const cacheHandler = (index: number) => (height: number) => {
 		const prevOffset = cache.current[index - 1]?.offset || 0;
 		const prevHeight = cache.current[index - 1]?.height || 0;
@@ -46,8 +50,8 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 		if (cache.current[index]?.offset === offset && cache.current[index]?.height === height) return;
 
 		cache.current[index] = { offset, height };
-		containerHeight.current = containerHeight.current + height - ESTIMATED_ROW_HEIGHT;
 		setScroll(prevScroll => prevScroll + CORRECTION);
+		containerHeightHandler(height);
 	};
 
 	const scrollHandler = (evt: UIEvent<HTMLDivElement>) => setScroll(evt.currentTarget.scrollTop);
