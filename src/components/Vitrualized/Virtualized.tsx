@@ -56,7 +56,9 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 		<div onScroll={scrollHandler} className={styles.container} style={{ height: `${CONTAINER_HEIGHT}px` }}>
 			<div style={{ height: `${containerHeight.current}px` }}>
 				{virtualizedRows.map(el => (
-					<AutoSizer key={el.index} element={el} heightSetter={cacheHandler(el.index)} />
+					<AutoSizer key={el.index} offset={el.transform} heightSetter={cacheHandler(el.index)}>
+						{el.text}
+					</AutoSizer>
 				))}
 			</div>
 		</div>
