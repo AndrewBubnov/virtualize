@@ -2,8 +2,9 @@ import { useMemo, useState, UIEvent, useRef } from 'react';
 import { AutoSizer } from 'components/AutoSizer/AutoSizer.tsx';
 import { getInitCache } from 'utils/getInitCache.ts';
 import { useScrollHeight } from 'hooks/useScrollHeight.ts';
-import { CONTAINER_HEIGHT, CORRECTION, ESTIMATED_ROW_HEIGHT, OVERSCAN } from 'constants.ts';
+import { CORRECTION, ESTIMATED_ROW_HEIGHT, OVERSCAN } from 'constants.ts';
 import styles from './Virtualized.module.css';
+import { useContainerHeight } from '../../hooks/useContainerHeight.ts';
 
 interface VirtualizedProps {
 	items: string[];
@@ -16,6 +17,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 	const cache = useRef<Cache>(getInitCache(items.length));
 
 	const [scrollHeight, setScrollHeight] = useScrollHeight(allRowsNumber);
+	const { containerHeight, container } = useContainerHeight();
 
 	const virtualizedRows = useMemo(() => {
 		const scrolledRows = Math.max(
@@ -26,7 +28,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 		const startIndex = Math.max(scrolledRows - OVERSCAN, 0);
 
 		const endIndex = Math.min(
-			Math.ceil(scrolledRows + OVERSCAN + CONTAINER_HEIGHT / ESTIMATED_ROW_HEIGHT),
+			Math.ceil(scrolledRows + OVERSCAN + containerHeight / ESTIMATED_ROW_HEIGHT),
 			allRowsNumber
 		);
 
@@ -38,7 +40,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 				transform: cache.current[currentIndex]?.offset || 0,
 			};
 		});
-	}, [allRowsNumber, items, scroll]);
+	}, [allRowsNumber, containerHeight, items, scroll]);
 
 	const sizeHandler = (index: number) => (height: number) => {
 		const prevOffset = cache.current[index - 1]?.offset || 0;
@@ -55,7 +57,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 	const scrollHandler = (evt: UIEvent<HTMLDivElement>) => setScroll(evt.currentTarget.scrollTop);
 
 	return (
-		<div onScroll={scrollHandler} className={styles.container} style={{ height: `${CONTAINER_HEIGHT}px` }}>
+		<div onScroll={scrollHandler} className={styles.container} ref={container}>
 			<div style={{ height: `${scrollHeight}px` }}>
 				{virtualizedRows.map(el => (
 					<AutoSizer key={el.index} offset={el.transform} heightSetter={sizeHandler(el.index)}>
