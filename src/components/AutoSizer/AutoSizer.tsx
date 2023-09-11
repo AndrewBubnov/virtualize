@@ -1,5 +1,5 @@
-import styles from './AutoSizer.module.css';
 import { ReactNode, useLayoutEffect, useRef } from 'react';
+import styles from './AutoSizer.module.css';
 
 interface AutoSizerProps {
 	children: ReactNode;
