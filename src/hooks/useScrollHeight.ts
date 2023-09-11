@@ -6,7 +6,7 @@ interface SetHeightArgs {
 	offset: number;
 }
 
-export const useContainerHeight = (allRowsNumber: number): [number, ({ index, offset }: SetHeightArgs) => void] => {
+export const useScrollHeight = (allRowsNumber: number): [number, ({ index, offset }: SetHeightArgs) => void] => {
 	const [containerHeight, setContainerHeight] = useState<number>(0);
 	const containerHeightRef = useRef<number>(allRowsNumber * ESTIMATED_ROW_HEIGHT);
 	const setHeight = ({ index, offset }: SetHeightArgs) => {

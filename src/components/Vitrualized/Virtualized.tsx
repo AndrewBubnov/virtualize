@@ -1,10 +1,9 @@
 import { useMemo, useState, UIEvent, useRef } from 'react';
 import { AutoSizer } from 'components/AutoSizer/AutoSizer.tsx';
 import { getInitCache } from 'utils/getInitCache.ts';
-import { useContainerHeight } from 'hooks/useContainerHeight.ts';
+import { useScrollHeight } from 'hooks/useScrollHeight.ts';
 import { CONTAINER_HEIGHT, CORRECTION, ESTIMATED_ROW_HEIGHT, OVERSCAN } from 'constants.ts';
 import styles from './Virtualized.module.css';
-
 
 interface VirtualizedProps {
 	items: string[];
@@ -16,7 +15,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 	const [scroll, setScroll] = useState<number>(0);
 	const cache = useRef<Cache>(getInitCache(items.length));
 
-	const [containerHeight, setContainerHeight] = useContainerHeight(allRowsNumber);
+	const [scrollHeight, setScrollHeight] = useScrollHeight(allRowsNumber);
 
 	const virtualizedRows = useMemo(() => {
 		const scrolledRows = Math.max(
@@ -49,7 +48,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 		if (cache.current[index]?.offset === offset && cache.current[index]?.height === height) return;
 
 		cache.current[index] = { offset, height };
-		setContainerHeight({ index, offset });
+		setScrollHeight({ index, offset });
 		setScroll(prevScroll => prevScroll + CORRECTION);
 	};
 
@@ -57,7 +56,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 
 	return (
 		<div onScroll={scrollHandler} className={styles.container} style={{ height: `${CONTAINER_HEIGHT}px` }}>
-			<div style={{ height: `${containerHeight}px` }}>
+			<div style={{ height: `${scrollHeight}px` }}>
 				{virtualizedRows.map(el => (
 					<AutoSizer key={el.index} offset={el.transform} heightSetter={sizeHandler(el.index)}>
 						{el.text}
