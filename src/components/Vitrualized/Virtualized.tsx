@@ -44,12 +44,13 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 	const forceUpdate = () => setScroll(prevScroll => prevScroll + CORRECTION);
 
 	const sizeHandler = (index: number) => (height: number) => {
+		const element = cache.current[index];
 		const prevElement = cache.current[index - 1];
 		const prevOffset = prevElement?.offset || 0;
 		const prevHeight = prevElement?.height || 0;
 		const offset = prevOffset + prevHeight;
 
-		if (cache.current[index]?.offset === offset && cache.current[index]?.height === height) return;
+		if (element?.offset === offset && element?.height === height) return;
 
 		cache.current[index] = { offset, height };
 		if (index) setRowHeight(offset / index);
