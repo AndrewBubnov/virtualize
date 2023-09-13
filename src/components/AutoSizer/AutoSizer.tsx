@@ -4,13 +4,14 @@ import styles from './AutoSizer.module.css';
 interface AutoSizerProps {
 	children: ReactNode;
 	offset: number;
-	heightSetter(height: number): void;
+	onHeightSet(height: number): void;
 }
 
-export const AutoSizer = ({ offset, heightSetter, children }: AutoSizerProps) => {
+export const AutoSizer = ({ offset, onHeightSet, children }: AutoSizerProps) => {
 	const ref = useRef<HTMLDivElement | null>(null);
+	const onHeightSetRef = useRef<(height: number) => void>(onHeightSet);
 
-	useLayoutEffect(() => heightSetter(ref.current?.clientHeight || 0), [heightSetter]);
+	useLayoutEffect(() => onHeightSetRef.current(ref.current?.clientHeight || 0), []);
 
 	return (
 		<div className={styles.row} style={{ transform: `translate3d(0, ${offset}px, 0)` }} ref={ref}>
