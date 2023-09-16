@@ -42,9 +42,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 	const sizeHandler = (index: number) => (height: number) => {
 		const element = cache.current[index];
 		const prevElement = cache.current[index - 1];
-		const prevOffset = prevElement?.offset || 0;
-		const prevHeight = prevElement?.height || 0;
-		const offset = prevOffset + prevHeight;
+		const offset = (prevElement?.offset || 0) + (prevElement?.height || 0);
 
 		if (element?.offset === offset && element?.height === height) return;
 
