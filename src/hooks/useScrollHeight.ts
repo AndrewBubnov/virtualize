@@ -1,10 +1,6 @@
 import { useRef, useState } from 'react';
-import { ESTIMATED_ROW_HEIGHT } from '../constants.ts';
-
-interface SetHeightArgs {
-	index: number;
-	offset: number;
-}
+import { ESTIMATED_ROW_HEIGHT } from 'constants.ts';
+import { SetHeightArgs } from 'types.ts';
 
 export const useScrollHeight = (allRowsNumber: number): [number, ({ index, offset }: SetHeightArgs) => void] => {
 	const [containerHeight, setContainerHeight] = useState<number>(0);

@@ -10,3 +10,7 @@ export interface AutoSizerProps {
 	offset: number;
 	onHeightSet(height: number): void;
 }
+export interface SetHeightArgs {
+	index: number;
+	offset: number;
+}
