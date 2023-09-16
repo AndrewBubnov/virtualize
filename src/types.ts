@@ -9,5 +9,4 @@ export interface AutoSizerProps {
 	children: ReactNode;
 	offset: number;
 	onHeightSet(height: number): void;
-	dataIndex: number;
 }
