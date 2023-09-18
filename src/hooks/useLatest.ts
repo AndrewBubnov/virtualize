@@ -6,5 +6,5 @@ export const useLatest = <T>(value: T) => {
 		ref.current = value;
 	}, [value]);
 
-	return ref;
+	return ref.current;
 };

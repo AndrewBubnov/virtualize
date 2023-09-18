@@ -5,11 +5,10 @@ import styles from './AutoSizer.module.css';
 
 export const AutoSizer = ({ offset, onInitHeightSet, onResize, children }: AutoSizerProps) => {
 	const ref = useRef<HTMLDivElement | null>(null);
-	const onResizeRef = useLatest<(height: number) => void>(onResize);
+	const resize = useLatest<(height: number) => void>(onResize);
 
 	useLayoutEffect(() => {
 		if (!ref.current) return;
-		const { current: resize } = onResizeRef;
 		let currentHeight = 0;
 		let isResized = false;
 		const observer = new ResizeObserver(([entry]) => {
@@ -29,7 +28,7 @@ export const AutoSizer = ({ offset, onInitHeightSet, onResize, children }: AutoS
 			currentHeight = 0;
 			observer.disconnect();
 		};
-	}, [onInitHeightSet, onResizeRef]);
+	}, [onInitHeightSet, resize]);
 
 	return (
 		<div ref={ref} className={styles.row} style={{ transform: `translate3d(0, ${offset}px, 0)` }}>
