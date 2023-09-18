@@ -1,20 +1,18 @@
 import { useMemo, useState, UIEvent, useRef } from 'react';
 import { AutoSizer } from 'components/AutoSizer/AutoSizer.tsx';
 import { getInitCache } from 'utils/getInitCache.ts';
-import { useScrollHeight } from 'hooks/useScrollHeight.ts';
 import { useContainerHeight } from 'hooks/useContainerHeight.ts';
-import { useAverageRowHeight } from 'hooks/useAverageRowHeight.ts';
+import { useHeight } from 'hooks/useHeight.ts';
 import { CORRECTION, OVERSCAN } from 'constants.ts';
 import { CacheItem, VirtualizedProps } from 'types.ts';
 import styles from './Virtualized.module.css';
 
 export const Virtualized = ({ items }: VirtualizedProps) => {
-	const allRowsNumber = useMemo(() => items.length, [items.length]);
+	const totalRowsNumber = useMemo(() => items.length, [items.length]);
 	const [scroll, setScroll] = useState<number>(0);
 	const cache = useRef<CacheItem[]>(getInitCache(items.length));
 
-	const [rowHeight, setRowHeight] = useAverageRowHeight();
-	const [scrollHeight, setScrollHeight] = useScrollHeight(allRowsNumber);
+	const { rowHeight, scrollHeight, setRowHeight } = useHeight(totalRowsNumber);
 	const { containerHeight, container } = useContainerHeight();
 
 	const virtualizedRows = useMemo(() => {
@@ -25,7 +23,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 
 		const startIndex = Math.max(scrolledRows - OVERSCAN, 0);
 
-		const endIndex = Math.min(Math.ceil(scrolledRows + OVERSCAN + containerHeight / rowHeight), allRowsNumber);
+		const endIndex = Math.min(Math.ceil(scrolledRows + OVERSCAN + containerHeight / rowHeight), totalRowsNumber);
 
 		return items.slice(startIndex, endIndex + 1).map((item, index) => {
 			const currentIndex = startIndex + index;
@@ -35,7 +33,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 				transform: cache.current[currentIndex]?.offset || 0,
 			};
 		});
-	}, [allRowsNumber, containerHeight, items, rowHeight, scroll]);
+	}, [totalRowsNumber, containerHeight, items, rowHeight, scroll]);
 
 	const forceUpdate = () => setScroll(prevScroll => prevScroll + CORRECTION);
 
@@ -45,11 +43,9 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 		const offset = (prevElement?.offset || 0) + (prevElement?.height || 0);
 
 		if (element?.offset === offset && element?.height === height) return;
-
 		cache.current[index] = { offset, height };
-		if (index) setRowHeight(offset / index);
 
-		setScrollHeight({ index, offset });
+		setRowHeight({ height, index });
 		forceUpdate();
 	};
 
