@@ -1,8 +1,9 @@
 import { useMemo, useState, UIEvent, useRef } from 'react';
 import { AutoSizer } from 'components/AutoSizer/AutoSizer.tsx';
-import { getInitCache } from 'utils/getInitCache.ts';
 import { useContainerHeight } from 'hooks/useContainerHeight.ts';
-import { useHeight } from 'hooks/useHeight.ts';
+import { useAverageRowHeight } from 'hooks/useAverageRowHeight.ts';
+import { useScrollHeight } from 'hooks/useScrollHeight.ts';
+import { getInitCache } from 'utils/getInitCache.ts';
 import { CORRECTION, OVERSCAN } from 'constants.ts';
 import { CacheItem, VirtualizedProps } from 'types.ts';
 import styles from './Virtualized.module.css';
@@ -12,7 +13,8 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 	const [scroll, setScroll] = useState<number>(0);
 	const cache = useRef<CacheItem[]>(getInitCache(items.length));
 
-	const { rowHeight, scrollHeight, setRowHeight } = useHeight(totalRowsNumber);
+	const { rowHeight, setRowHeight } = useAverageRowHeight();
+	const [scrollHeight, setScrollHeight] = useScrollHeight(totalRowsNumber);
 	const { containerHeight, container } = useContainerHeight();
 
 	const virtualizedRows = useMemo(() => {
@@ -44,7 +46,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 
 		if (element?.offset === offset && element?.height === height) return;
 		cache.current[index] = { offset, height };
-
+		setScrollHeight({ offset, index });
 		setRowHeight({ height, index });
 		forceUpdate();
 	};
