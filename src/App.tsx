@@ -1,7 +1,8 @@
-import styles from './App.module.css';
-import { Virtualized } from './components/Vitrualized/Virtualized.tsx';
-import { loremIpsum } from 'lorem-ipsum';
 import { useState } from 'react';
+import { Virtualized } from 'components/Vitrualized/Virtualized.tsx';
+import { loremIpsum } from 'lorem-ipsum';
+import styles from './App.module.css';
+
 
 const Expandable = ({ children }: { children: string }) => {
 	const [isExpanded, setIsExpanded] = useState(false);
