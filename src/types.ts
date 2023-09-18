@@ -1,14 +1,15 @@
-import { ReactNode } from 'react';
+import { ReactElement, ReactNode } from 'react';
 
 export interface VirtualizedProps {
-	items: string[];
+	items: ReactElement[];
 }
 export type CacheItem = { offset: number; height: number };
 
 export interface AutoSizerProps {
 	children: ReactNode;
 	offset: number;
-	onHeightSet(height: number): void;
+	onInitHeightSet(height: number): void;
+	onResize(height: number): void;
 }
 export interface SetHeightArgs {
 	index: number;
