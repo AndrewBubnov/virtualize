@@ -1,17 +1,7 @@
-import { useState } from 'react';
 import { Virtualized } from 'components/Vitrualized/Virtualized.tsx';
 import { loremIpsum } from 'lorem-ipsum';
+import { Expandable } from './components/Presentation/Expandable.tsx';
 import styles from './App.module.css';
-
-
-const Expandable = ({ children }: { children: string }) => {
-	const [isExpanded, setIsExpanded] = useState(false);
-	return (
-		<div style={{ cursor: 'pointer' }} onClick={() => setIsExpanded(prevState => !prevState)}>
-			{isExpanded ? `${children} ${children} ${children}` : children}
-		</div>
-	);
-};
 
 const items = Array.from(
 	{ length: 100_000 },
@@ -25,12 +15,14 @@ const items = Array.from(
 		})}`
 );
 
-const expandableItems = items.map(el => <Expandable>{el}</Expandable>);
-
 function App() {
 	return (
 		<div className={styles.container}>
-			<Virtualized items={expandableItems} />
+			<Virtualized
+				items={items.map(el => (
+					<Expandable>{el}</Expandable>
+				))}
+			/>
 		</div>
 	);
 }

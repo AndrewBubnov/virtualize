@@ -1,0 +1,22 @@
+.expanded {
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+
+.expanded::before {
+    content: 'Click me';
+    display: block;
+    position: absolute;
+    top: -20px;
+    left: 40%;
+    visibility: hidden;
+    opacity: 0;
+    color: steelblue;
+    transition: opacity 0.8s ease;
+}
+
+.expanded:hover::before {
+    visibility: visible;
+    opacity: 1
+}
