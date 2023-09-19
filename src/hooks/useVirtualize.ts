@@ -54,7 +54,9 @@ export const useVirtualize = (items: ReactElement[]) => {
 	const resizeHandler = (index: number) => (height: number) => {
 		cache.current = cache.current.map((el, cacheIndex) => {
 			if (cacheIndex < index) return el;
-			if (cacheIndex === index) return { ...el, height };
+			if (cacheIndex === index) {
+				return { ...el, height };
+			}
 			const diff = height - cache.current[index].height;
 			return { ...el, offset: el.offset + diff };
 		});
