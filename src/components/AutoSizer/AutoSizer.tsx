@@ -9,23 +9,22 @@ export const AutoSizer = ({ offset, onInitHeightSet, onResize, children }: AutoS
 
 	useLayoutEffect(() => {
 		if (!ref.current) return;
-		let currentHeight = 0;
+		let initHeight = 0;
 		let isResized = false;
 		const observer = new ResizeObserver(([entry]) => {
 			const height = entry.borderBoxSize[0].blockSize;
-			if (currentHeight) {
+			if (initHeight) {
 				resize(height);
 				isResized = true;
 				return;
 			}
 			onInitHeightSet(height);
-			currentHeight = height;
+			initHeight = height;
 		});
 		observer.observe(ref.current);
 
 		return () => {
-			if (isResized) resize(currentHeight);
-			currentHeight = 0;
+			if (isResized) resize(initHeight);
 			observer.disconnect();
 		};
 	}, [onInitHeightSet, resize]);
