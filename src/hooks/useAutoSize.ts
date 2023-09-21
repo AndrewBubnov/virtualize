@@ -5,29 +5,28 @@ import { UseAutoSizeProps } from 'types.ts';
 export const useAutoSize = ({ onResize, onInitHeightSet }: UseAutoSizeProps) => {
 	const ref = useRef<HTMLDivElement>(null);
 	const resize = useFirstRefMemo<(height: number) => void>(onResize);
-	const setInitHeight = useFirstRefMemo<(height: number) => void>(onInitHeightSet);
+	const initHeight = useRef<number>(0);
+
+	useLayoutEffect(() => {
+		const height = ref.current?.clientHeight || 0;
+		initHeight.current = height;
+		onInitHeightSet(height);
+	}, [onInitHeightSet]);
 
 	useLayoutEffect(() => {
 		if (!ref.current) return;
-		let initHeight = 0;
-		let isResized = false;
+		const { current: divRef } = ref;
 		const observer = new ResizeObserver(([entry]) => {
 			const height = entry.borderBoxSize[0].blockSize;
-			if (initHeight) {
-				resize(height);
-				isResized = true;
-				return;
-			}
-			setInitHeight(height);
-			initHeight = height;
+			if (initHeight.current && initHeight.current !== height) resize(height);
 		});
-		observer.observe(ref.current);
+		observer.observe(divRef);
 
 		return () => {
-			if (isResized) resize(initHeight);
+			if (divRef.clientHeight !== initHeight.current) resize(initHeight.current);
 			observer.disconnect();
 		};
-	}, [resize, setInitHeight]);
+	}, [resize]);
 
 	return ref;
 };
