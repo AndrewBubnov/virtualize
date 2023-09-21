@@ -1,10 +1,11 @@
 import { ReactElement, UIEvent, useCallback, useMemo, useRef, useState } from 'react';
-import { useAverageRowHeight } from './useAverageRowHeight.ts';
-import { useScrollHeight } from './useScrollHeight.ts';
-import { useContainerHeight } from './useContainerHeight.ts';
-import { CORRECTION, OVERSCAN } from 'constants.ts';
+import { useAverageRowHeight } from 'hooks/useAverageRowHeight.ts';
+import { useScrollHeight } from 'hooks/useScrollHeight.ts';
+import { useContainerHeight } from 'hooks/useContainerHeight.ts';
 import { getInitCache } from 'utils/getInitCache.ts';
+import { CORRECTION, OVERSCAN } from 'constants.ts';
 import { CacheItem } from 'types.ts';
+
 export const useVirtualize = (items: ReactElement[]) => {
 	const totalRowsNumber = useMemo(() => items.length, [items.length]);
 

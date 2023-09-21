@@ -1,5 +1,10 @@
+:root {
+    --offset: '';
+}
+
 .row {
     position: absolute;
     top: 0;
     padding: 7px 0;
+    transform: translate3d(0, var(--offset), 0);
 }

@@ -15,3 +15,7 @@ export interface SetHeightArgs {
 	index: number;
 	offset: number;
 }
+export interface UseAutoSizeProps {
+	onResize(height: number): void;
+	onInitHeightSet(height: number): void;
+}
