@@ -3,7 +3,7 @@ import { useFirstRefMemo } from 'hooks/useFirstRefMemo.ts';
 import { UseAutoSizeProps } from 'types.ts';
 
 export const useAutoSize = ({ onResize, onInitHeightSet }: UseAutoSizeProps) => {
-	const ref = useRef<HTMLDivElement | null>(null);
+	const ref = useRef<HTMLDivElement>(null);
 	const resize = useFirstRefMemo<(height: number) => void>(onResize);
 	const setInitHeight = useFirstRefMemo<(height: number) => void>(onInitHeightSet);
 
