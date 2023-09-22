@@ -1,7 +1,7 @@
 import { AutoSizer } from 'components/AutoSizer/AutoSizer.tsx';
+import { useVirtualize } from 'hooks/useVirtualize.ts';
 import { VirtualizedProps } from 'types.ts';
 import styles from './Virtualized.module.css';
-import { useVirtualize } from 'hooks/useVirtualize.ts';
 
 export const Virtualized = ({ items }: VirtualizedProps) => {
 	const { virtualizedRows, initSizeHandler, resizeHandler, scrollHeight, container, scrollHandler } =
