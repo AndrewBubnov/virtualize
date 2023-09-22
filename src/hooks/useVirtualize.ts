@@ -14,9 +14,9 @@ export const useVirtualize = (items: ReactElement[]) => {
 
 	const { rowHeight, setRowHeight } = useAverageRowHeight();
 	const [scrollHeight, setScrollHeight] = useScrollHeight(totalRowsNumber);
-	const { containerHeight, container } = useContainerHeight();
+	const { containerHeight, containerRef } = useContainerHeight();
 
-	const { virtualizedRows, startIndex } = useMemo(() => {
+	const { rows, startIndex } = useMemo(() => {
 		const scrolledRows = Math.max(
 			cache.current.findIndex(value => scroll < value.offset),
 			0
@@ -26,7 +26,7 @@ export const useVirtualize = (items: ReactElement[]) => {
 
 		const endIndex = Math.min(Math.ceil(scrolledRows + OVERSCAN + containerHeight / rowHeight), totalRowsNumber);
 
-		const virtualizedRows = items.slice(startIndex, endIndex + 1).map((item, index) => {
+		const rows = items.slice(startIndex, endIndex + 1).map((item, index) => {
 			const currentIndex = startIndex + index;
 			return {
 				content: item,
@@ -34,7 +34,7 @@ export const useVirtualize = (items: ReactElement[]) => {
 				transform: cache.current[currentIndex]?.offset || 0,
 			};
 		});
-		return { virtualizedRows, startIndex };
+		return { rows, startIndex };
 	}, [totalRowsNumber, containerHeight, items, rowHeight, scroll]);
 
 	const forceUpdate = useCallback(() => setScroll(prevScroll => prevScroll + CORRECTION), []);
@@ -66,5 +66,5 @@ export const useVirtualize = (items: ReactElement[]) => {
 		forceUpdate();
 	};
 
-	return { virtualizedRows, initSizeHandler, scrollHeight, container, scrollHandler, resizeHandler };
+	return { rows, initSizeHandler, scrollHeight, containerRef, scrollHandler, resizeHandler };
 };

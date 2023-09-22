@@ -2,12 +2,12 @@ import { useLayoutEffect, useRef, useState } from 'react';
 
 export const useContainerHeight = () => {
 	const [containerHeight, setContainerHeight] = useState<number>(0);
-	const container = useRef<HTMLDivElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
 
 	useLayoutEffect(() => {
-		if (!container.current) return;
-		setContainerHeight(container.current.clientHeight);
+		if (!containerRef.current) return;
+		setContainerHeight(containerRef.current.clientHeight);
 	}, []);
 
-	return { containerHeight, container };
+	return { containerHeight, containerRef };
 };
