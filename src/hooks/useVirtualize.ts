@@ -43,35 +43,45 @@ export const useVirtualize = (items: ReactElement[]) => {
 
 	const scrollHandler = useCallback((evt: UIEvent<HTMLDivElement>) => setScroll(evt.currentTarget.scrollTop), []);
 
+	const onMountFactory = useCallback(
+		(index: number) => (height: number) => {
+			const { current } = cache;
+			const element = current[index];
+			const prevElement = current[index - 1];
+			const offset = (prevElement?.offset || 0) + (prevElement?.height || 0);
+
+			if (element?.offset === offset && element?.height === height) return;
+			cache.current[index] = { offset, height };
+			setScrollHeight({ offset, index });
+			setRowHeight({ height, index });
+		},
+		[setRowHeight, setScrollHeight]
+	);
+
+	const onResizeFabric = useCallback(
+		(index: number) => (height: number) => {
+			cache.current = cache.current.map((el, cacheIndex) => {
+				if (cacheIndex < index) return el;
+				if (cacheIndex === index) {
+					return { ...el, height };
+				}
+				const diff = height - cache.current[index].height;
+				return { ...el, offset: el.offset + diff };
+			});
+			forceUpdate();
+		},
+		[forceUpdate]
+	);
+
 	const handlers = useMemo(
 		() =>
 			items.reduce((acc, _, index) => {
-				const onMount = (height: number) => {
-					const { current } = cache;
-					const element = current[index];
-					const prevElement = current[index - 1];
-					const offset = (prevElement?.offset || 0) + (prevElement?.height || 0);
-
-					if (element?.offset === offset && element?.height === height) return;
-					cache.current[index] = { offset, height };
-					setScrollHeight({ offset, index });
-					setRowHeight({ height, index });
-				};
-				const onResize = (height: number) => {
-					cache.current = cache.current.map((el, cacheIndex) => {
-						if (cacheIndex < index) return el;
-						if (cacheIndex === index) {
-							return { ...el, height };
-						}
-						const diff = height - cache.current[index].height;
-						return { ...el, offset: el.offset + diff };
-					});
-					forceUpdate();
-				};
+				const onMount = onMountFactory(index);
+				const onResize = onResizeFabric(index);
 				acc[index] = { onMount, onResize };
 				return acc;
 			}, {} as Handlers),
-		[forceUpdate, items, setRowHeight, setScrollHeight]
+		[items, onMountFactory, onResizeFabric]
 	);
 
 	return { rows, scrollHeight, containerRef, scrollHandler, handlers };
