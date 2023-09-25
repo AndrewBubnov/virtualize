@@ -14,10 +14,7 @@ export const useAutoSize = ({ onResize, onMount }: UseAutoSizeProps) => {
 	useLayoutEffect(() => {
 		if (!ref.current) return;
 		const { current: divRef } = ref;
-		const observer = new ResizeObserver(([entry]) => {
-			const height = entry.borderBoxSize[0].blockSize;
-			if (initHeight.current && initHeight.current !== height) onResize(height);
-		});
+		const observer = new ResizeObserver(([entry]) => onResize(entry.borderBoxSize[0].blockSize));
 		observer.observe(divRef);
 
 		return () => {
