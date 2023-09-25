@@ -3,7 +3,7 @@ import { useAverageRowHeight } from 'hooks/useAverageRowHeight.ts';
 import { useScrollHeight } from 'hooks/useScrollHeight.ts';
 import { useContainerHeight } from 'hooks/useContainerHeight.ts';
 import { getInitCache } from 'utils/getInitCache.ts';
-import { CORRECTION, OVERSCAN } from 'constants.ts';
+import { FORCE_UPDATE_VALUE, OVERSCAN } from 'constants.ts';
 import { CacheItem } from 'types.ts';
 
 export const useVirtualize = (items: ReactElement[]) => {
@@ -37,7 +37,7 @@ export const useVirtualize = (items: ReactElement[]) => {
 		return { rows, startIndex };
 	}, [totalRowsNumber, containerHeight, items, rowHeight, scroll]);
 
-	const forceUpdate = useCallback(() => setScroll(prevScroll => prevScroll + CORRECTION), []);
+	const forceUpdate = useCallback(() => setScroll(prevScroll => prevScroll + FORCE_UPDATE_VALUE), []);
 
 	useEffect(forceUpdate, [startIndex, forceUpdate]);
 
