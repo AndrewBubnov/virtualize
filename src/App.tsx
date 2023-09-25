@@ -4,7 +4,7 @@ import { Expandable } from './components/Presentation/Expandable.tsx';
 import styles from './App.module.css';
 
 const items = Array.from(
-	{ length: 100_000 },
+	{ length: 1_000 },
 	(_, i) =>
 		`${i}. ${loremIpsum({
 			format: 'plain',

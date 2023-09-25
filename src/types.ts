@@ -17,3 +17,5 @@ export interface AutoSizerProps extends UseAutoSizeProps {
 	children: ReactNode;
 	offset: number;
 }
+
+export type Handlers = Record<number, { onMount: (arg: number) => void; onResize: (arg: number) => void }>

@@ -1,10 +1,8 @@
 import { useLayoutEffect, useRef } from 'react';
 import { UseAutoSizeProps } from 'types.ts';
-import { useFirstRefMemo } from './useFirstRefMemo.ts';
 
 export const useAutoSize = ({ onResize, onMount }: UseAutoSizeProps) => {
 	const ref = useRef<HTMLDivElement>(null);
-	const resize = useFirstRefMemo<(height: number) => void>(onResize);
 	const initHeight = useRef<number>(0);
 
 	useLayoutEffect(() => {
@@ -18,15 +16,15 @@ export const useAutoSize = ({ onResize, onMount }: UseAutoSizeProps) => {
 		const { current: divRef } = ref;
 		const observer = new ResizeObserver(([entry]) => {
 			const height = entry.borderBoxSize[0].blockSize;
-			if (initHeight.current && initHeight.current !== height) resize(height);
+			if (initHeight.current && initHeight.current !== height) onResize(height);
 		});
 		observer.observe(divRef);
 
 		return () => {
-			if (divRef.clientHeight !== initHeight.current) resize(initHeight.current);
+			if (divRef.clientHeight !== initHeight.current) onResize(initHeight.current);
 			observer.disconnect();
 		};
-	}, [resize]);
+	}, [onResize]);
 
 	return ref;
 };

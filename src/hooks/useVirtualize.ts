@@ -4,7 +4,7 @@ import { useScrollHeight } from 'hooks/useScrollHeight.ts';
 import { useContainerHeight } from 'hooks/useContainerHeight.ts';
 import { getInitCache } from 'utils/getInitCache.ts';
 import { FORCE_UPDATE_VALUE, OVERSCAN } from 'constants.ts';
-import { CacheItem } from 'types.ts';
+import { CacheItem, Handlers } from 'types.ts';
 
 export const useVirtualize = (items: ReactElement[]) => {
 	const totalRowsNumber = useMemo(() => items.length, [items.length]);
@@ -43,29 +43,36 @@ export const useVirtualize = (items: ReactElement[]) => {
 
 	const scrollHandler = useCallback((evt: UIEvent<HTMLDivElement>) => setScroll(evt.currentTarget.scrollTop), []);
 
-	const initSizeHandler = (index: number) => (height: number) => {
-		const { current } = cache;
-		const element = current[index];
-		const prevElement = current[index - 1];
-		const offset = (prevElement?.offset || 0) + (prevElement?.height || 0);
+	const handlers = useMemo(
+		() =>
+			items.reduce((acc, _, index) => {
+				const onMount = (height: number) => {
+					const { current } = cache;
+					const element = current[index];
+					const prevElement = current[index - 1];
+					const offset = (prevElement?.offset || 0) + (prevElement?.height || 0);
 
-		if (element?.offset === offset && element?.height === height) return;
-		cache.current[index] = { offset, height };
-		setScrollHeight({ offset, index });
-		setRowHeight({ height, index });
-	};
+					if (element?.offset === offset && element?.height === height) return;
+					cache.current[index] = { offset, height };
+					setScrollHeight({ offset, index });
+					setRowHeight({ height, index });
+				};
+				const onResize = (height: number) => {
+					cache.current = cache.current.map((el, cacheIndex) => {
+						if (cacheIndex < index) return el;
+						if (cacheIndex === index) {
+							return { ...el, height };
+						}
+						const diff = height - cache.current[index].height;
+						return { ...el, offset: el.offset + diff };
+					});
+					forceUpdate();
+				};
+				acc[index] = { onMount, onResize };
+				return acc;
+			}, {} as Handlers),
+		[forceUpdate, items, setRowHeight, setScrollHeight]
+	);
 
-	const resizeHandler = (index: number) => (height: number) => {
-		cache.current = cache.current.map((el, cacheIndex) => {
-			if (cacheIndex < index) return el;
-			if (cacheIndex === index) {
-				return { ...el, height };
-			}
-			const diff = height - cache.current[index].height;
-			return { ...el, offset: el.offset + diff };
-		});
-		forceUpdate();
-	};
-
-	return { rows, initSizeHandler, scrollHeight, containerRef, scrollHandler, resizeHandler };
+	return { rows, scrollHeight, containerRef, scrollHandler, handlers };
 };
