@@ -4,7 +4,7 @@ import { VirtualizedProps } from 'types.ts';
 import styles from './Virtualized.module.css';
 
 export const Virtualized = ({ items }: VirtualizedProps) => {
-	const { rows, initSizeHandler, resizeHandler, scrollHeight, containerRef, scrollHandler } = useVirtualize(items);
+	const { rows, mountHandler, resizeHandler, scrollHeight, containerRef, scrollHandler } = useVirtualize(items);
 	return (
 		<div onScroll={scrollHandler} className={styles.container} ref={containerRef}>
 			<div style={{ height: `${scrollHeight}px` }}>
@@ -12,7 +12,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 					<AutoSizer
 						key={el.index}
 						offset={el.transform}
-						onMount={initSizeHandler(el.index)}
+						onMount={mountHandler(el.index)}
 						onResize={resizeHandler(el.index)}
 					>
 						{el.content}

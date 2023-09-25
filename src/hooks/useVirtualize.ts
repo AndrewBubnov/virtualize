@@ -43,7 +43,7 @@ export const useVirtualize = (items: ReactElement[]) => {
 
 	const scrollHandler = useCallback((evt: UIEvent<HTMLDivElement>) => setScroll(evt.currentTarget.scrollTop), []);
 
-	const initSizeHandler = (index: number) => (height: number) => {
+	const mountHandler = (index: number) => (height: number) => {
 		const { current } = cache;
 		const element = current[index];
 		const prevElement = current[index - 1];
@@ -67,5 +67,5 @@ export const useVirtualize = (items: ReactElement[]) => {
 		forceUpdate();
 	};
 
-	return { rows, initSizeHandler, scrollHeight, containerRef, scrollHandler, resizeHandler };
+	return { rows, mountHandler, scrollHeight, containerRef, scrollHandler, resizeHandler };
 };
