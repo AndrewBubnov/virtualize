@@ -5,17 +5,15 @@ export interface VirtualizedProps {
 }
 export type CacheItem = { offset: number; height: number };
 
-export interface AutoSizerProps {
-	children: ReactNode;
-	offset: number;
-	onInitHeightSet(height: number): void;
-	onResize(height: number): void;
-}
 export interface SetHeightArgs {
 	index: number;
 	offset: number;
 }
 export interface UseAutoSizeProps {
 	onResize(height: number): void;
-	onInitHeightSet(height: number): void;
+	onMount(height: number): void;
+}
+export interface AutoSizerProps extends UseAutoSizeProps {
+	children: ReactNode;
+	offset: number;
 }

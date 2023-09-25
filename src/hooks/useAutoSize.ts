@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { useFirstRefMemo } from 'hooks/useFirstRefMemo.ts';
 import { UseAutoSizeProps } from 'types.ts';
 
-export const useAutoSize = ({ onResize, onInitHeightSet }: UseAutoSizeProps) => {
+export const useAutoSize = ({ onResize, onMount }: UseAutoSizeProps) => {
 	const ref = useRef<HTMLDivElement>(null);
 	const resize = useFirstRefMemo<(height: number) => void>(onResize);
 	const initHeight = useRef<number>(0);
@@ -10,8 +10,8 @@ export const useAutoSize = ({ onResize, onInitHeightSet }: UseAutoSizeProps) => 
 	useLayoutEffect(() => {
 		const height = ref.current?.clientHeight || 0;
 		initHeight.current = height;
-		onInitHeightSet(height);
-	}, [onInitHeightSet]);
+		onMount(height);
+	}, [onMount]);
 
 	useLayoutEffect(() => {
 		if (!ref.current) return;

@@ -12,7 +12,7 @@ export const Virtualized = ({ items }: VirtualizedProps) => {
 					<AutoSizer
 						key={el.index}
 						offset={el.transform}
-						onInitHeightSet={initSizeHandler(el.index)}
+						onMount={initSizeHandler(el.index)}
 						onResize={resizeHandler(el.index)}
 					>
 						{el.content}
