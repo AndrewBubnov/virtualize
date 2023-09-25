@@ -43,35 +43,29 @@ export const useVirtualize = (items: ReactElement[]) => {
 
 	const scrollHandler = useCallback((evt: UIEvent<HTMLDivElement>) => setScroll(evt.currentTarget.scrollTop), []);
 
-	const initSizeHandler = useCallback(
-		(index: number) => (height: number) => {
-			const { current } = cache;
-			const element = current[index];
-			const prevElement = current[index - 1];
-			const offset = (prevElement?.offset || 0) + (prevElement?.height || 0);
+	const initSizeHandler = (index: number) => (height: number) => {
+		const { current } = cache;
+		const element = current[index];
+		const prevElement = current[index - 1];
+		const offset = (prevElement?.offset || 0) + (prevElement?.height || 0);
 
-			if (element?.offset === offset && element?.height === height) return;
-			cache.current[index] = { offset, height };
-			setScrollHeight({ offset, index });
-			setRowHeight({ height, index });
-		},
-		[setRowHeight, setScrollHeight]
-	);
+		if (element?.offset === offset && element?.height === height) return;
+		cache.current[index] = { offset, height };
+		setScrollHeight({ offset, index });
+		setRowHeight({ height, index });
+	};
 
-	const resizeHandler = useCallback(
-		(index: number) => (height: number) => {
-			cache.current = cache.current.map((el, cacheIndex) => {
-				if (cacheIndex < index) return el;
-				if (cacheIndex === index) {
-					return { ...el, height };
-				}
-				const diff = height - cache.current[index].height;
-				return { ...el, offset: el.offset + diff };
-			});
-			forceUpdate();
-		},
-		[forceUpdate]
-	);
+	const resizeHandler = (index: number) => (height: number) => {
+		cache.current = cache.current.map((el, cacheIndex) => {
+			if (cacheIndex < index) return el;
+			if (cacheIndex === index) {
+				return { ...el, height };
+			}
+			const diff = height - cache.current[index].height;
+			return { ...el, offset: el.offset + diff };
+		});
+		forceUpdate();
+	};
 
 	return { rows, initSizeHandler, scrollHeight, containerRef, scrollHandler, resizeHandler };
 };
