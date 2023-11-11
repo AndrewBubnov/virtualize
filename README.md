@@ -8,9 +8,9 @@ Created by **Andrew Bubnov**.
 
 ## Features
 
-- **Dynamic Resizing**: Elements in the list can be resized dynamically without compromising the integrity of the list.
-
 - **Optimized Scrolling**: Performance is fine-tuned to ensure smooth scrolling at varying speeds, including rapid mouse-dragging of the scrollbar.
+  
+- **Dynamic Resizing**: Elements in the list can be resized dynamically without compromising the integrity of the list.
 
 - **Expandable Component**: The package includes an *Expandable* component designed for presentational purposes. It can be toggled from its normal height to triple height with a user click.
 
