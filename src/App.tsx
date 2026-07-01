@@ -1,4 +1,4 @@
-import { Virtualized } from 'components/Virtualized';
+import { Virtualized } from './components/Virtualized';
 import { loremIpsum } from 'lorem-ipsum';
 
 const items = Array.from(
@@ -14,13 +14,15 @@ const items = Array.from(
 );
 
 const App = () => (
-	<Virtualized height={550} width={500}>
-		{items.map((el, index) => (
-			<div key={index} style={{ padding: 12 }}>
-				{el}
-			</div>
-		))}
-	</Virtualized>
+	<div style={{ width: 500 }}>
+		<Virtualized height={550}>
+			{items.map((el, index) => (
+				<div key={index} style={{ padding: 12 }}>
+					{el}
+				</div>
+			))}
+		</Virtualized>
+	</div>
 );
 
 export default App;

@@ -13,10 +13,10 @@ Unlike traditional virtualized list libraries that rely on explicit item measure
 A container component that virtualizes a list of ReactNode elements with dynamic height support.
 
 | Prop        | Type                      | Description                                                                                |
-| ----------- | ------------------------- | ------------------------------------------------------------------------------------------ |
+| ----------- | ------------------------- |--------------------------------------------------------------------------------------------|
 | `children`  | `ReactNode[]`             | List of items to be virtualized                                                            |
 | `height`    | `CSSProperties['height']` | Height of the scroll container                                                             |
-| `width`     | `CSSProperties['width']`  | Width of the scroll container                                                              |
+| `width`     | `CSSProperties['width']`  | Optional width of the scroll container                                                     |
 | `className` | `string`                  | Optional class name for container                                                          |
 | `style`     | `CSSProperties`           | Additional inline styles                                                                   |
 | `overScan`  | `number`                  | Number of extra items rendered above and below the visible viewport for smoother scrolling |
