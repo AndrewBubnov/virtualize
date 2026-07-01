@@ -102,25 +102,6 @@ Estimated row height — used for unmeasured items
 
 As elements mount and resize, estimates are progressively replaced with real measurements, improving layout accuracy over time.
 
-### ⚙️ Components
-`Virtualized`
-
-Main container component responsible for:
-
-scroll handling
-visible range calculation
-layout window slicing
-
-`AutoSizer`
-
-Internal wrapper that:
-
-- attaches a ResizeObserver
-- reports initial mount height
-- reports subsequent size changes
-
-Used to keep layout consistent with real DOM size.
-
 ### 📌 Design philosophy
 
 This library prioritizes:
