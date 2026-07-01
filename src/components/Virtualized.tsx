@@ -7,12 +7,13 @@ export type VirtualizedProps = {
 	height: CSSProperties['height'];
 	width: CSSProperties['width'];
 	className?: string;
+	style?: CSSProperties;
 	overScan?: number;
 };
 
 const OVER_SCAN = 2;
 
-export const Virtualized = ({ children, height, width, className, overScan = OVER_SCAN }: VirtualizedProps) => {
+export const Virtualized = ({ children, height, width, className, style, overScan = OVER_SCAN }: VirtualizedProps) => {
 	const { rows, mountHandler, resizeHandler, scrollHeight, containerRef, scrollHandler } = useVirtualize(
 		children,
 		overScan
@@ -21,7 +22,7 @@ export const Virtualized = ({ children, height, width, className, overScan = OVE
 		<div
 			onScroll={scrollHandler}
 			ref={containerRef}
-			style={{ height, width, position: 'relative', overflow: 'auto', lineHeight: 1.5 }}
+			style={{ height, width, position: 'relative', overflow: 'auto', lineHeight: 1.5, ...style }}
 			className={className}
 		>
 			<div style={{ height: `${scrollHeight}px` }}>
