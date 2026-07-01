@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import { ESTIMATED_ROW_HEIGHT } from 'constants.ts';
+import { ESTIMATED_ROW_HEIGHT } from 'constants';
 
 export const useAverageRowHeight = () => {
 	const heightsRef = useRef<Record<number, number>>({});

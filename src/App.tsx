@@ -1,4 +1,4 @@
-import { Virtualized } from 'components/Virtualized.tsx';
+import { Virtualized } from 'components/Virtualized';
 import { loremIpsum } from 'lorem-ipsum';
 
 const items = Array.from(

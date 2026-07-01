@@ -1,5 +1,10 @@
-import { useAutoSize } from 'hooks/useAutoSize.ts';
-import { AutoSizerProps } from 'types.ts';
+import { ReactNode } from 'react';
+import { useAutoSize, UseAutoSizeProps } from 'hooks/useAutoSize';
+
+type AutoSizerProps = UseAutoSizeProps & {
+	children: ReactNode;
+	offset: number;
+};
 
 export const AutoSizer = ({ offset, onMount, onResize, children }: AutoSizerProps) => {
 	const ref = useAutoSize({ onResize, onMount });

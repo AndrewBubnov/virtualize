@@ -1,5 +1,9 @@
 import { useLayoutEffect, useRef } from 'react';
-import { UseAutoSizeProps } from 'types.ts';
+
+export type UseAutoSizeProps = {
+	onResize(height: number): void;
+	onMount(height: number): void;
+};
 
 export const useAutoSize = ({ onResize, onMount }: UseAutoSizeProps) => {
 	const ref = useRef<HTMLDivElement>(null);

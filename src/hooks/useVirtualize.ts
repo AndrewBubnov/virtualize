@@ -1,10 +1,11 @@
 import { ReactNode, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useAverageRowHeight } from 'hooks/useAverageRowHeight.ts';
-import { useScrollHeight } from 'hooks/useScrollHeight.ts';
-import { useContainerHeight } from 'hooks/useContainerHeight.ts';
-import { getInitCache } from 'utils/getInitCache.ts';
-import { FORCE_UPDATE_VALUE, OVERSCAN } from 'constants.ts';
-import { CacheItem } from 'types.ts';
+import { useAverageRowHeight } from 'hooks/useAverageRowHeight';
+import { useScrollHeight } from 'hooks/useScrollHeight';
+import { useContainerHeight } from 'hooks/useContainerHeight';
+import { CacheItem, getInitCache } from 'utils/getInitCache';
+
+export const OVER_SCAN = 2;
+export const FORCE_UPDATE_VALUE = 0.001;
 
 export const useVirtualize = (items: ReactNode[]) => {
 	const totalRowsNumber = useMemo(() => items.length, [items.length]);
@@ -22,9 +23,9 @@ export const useVirtualize = (items: ReactNode[]) => {
 			0
 		);
 
-		const startIndex = Math.max(scrolledRows - OVERSCAN, 0);
+		const startIndex = Math.max(scrolledRows - OVER_SCAN, 0);
 
-		const endIndex = Math.min(Math.ceil(scrolledRows + OVERSCAN + containerHeight / rowHeight), totalRowsNumber);
+		const endIndex = Math.min(Math.ceil(scrolledRows + OVER_SCAN + containerHeight / rowHeight), totalRowsNumber);
 
 		const rows = items.slice(startIndex, endIndex + 1).map((item, index) => {
 			const currentIndex = startIndex + index;

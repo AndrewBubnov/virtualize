@@ -1,6 +1,6 @@
 import { CSSProperties, ReactNode } from 'react';
-import { AutoSizer } from 'components/AutoSizer.tsx';
-import { useVirtualize } from 'hooks/useVirtualize.ts';
+import { AutoSizer } from 'components/AutoSizer';
+import { useVirtualize } from 'hooks/useVirtualize';
 
 export interface VirtualizedProps {
 	children: ReactNode[];
