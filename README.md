@@ -1,3 +1,5 @@
+[![npm version](https://badge.fury.io/js/clear-virtual-list.svg)](https://www.npmjs.com/package/clear-virtual-list)
+
 # React Virtualized Resizable List
 
 A React virtualization utility for rendering large lists with **dynamic, resizable item heights**, built around automatic DOM measurement and an internal layout cache.
