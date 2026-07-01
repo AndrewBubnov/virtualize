@@ -213,6 +213,10 @@ This approach is not optimal if you need:
 
 In those cases, React Window or TanStack Virtual are better choices.
 
+### 💬 Closing note
+
+This library is not trying to reinvent virtualization theory — it’s an attempt to make dynamic-height virtualization feel unforced in React, without requiring the developer to design a rendering pipeline around it.
+
 ## 📄 License
 
 MIT
@@ -220,8 +224,4 @@ MIT
 ## 👤 Author
 
 Andrew Bubnov
-
-### 💬 Closing note
-
-This library is not trying to reinvent virtualization theory — it’s an attempt to make dynamic-height virtualization feel unforced in React, without requiring the developer to design a rendering pipeline around it.
 
