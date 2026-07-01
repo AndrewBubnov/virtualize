@@ -1,4 +1,4 @@
-import { ReactElement, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAverageRowHeight } from 'hooks/useAverageRowHeight.ts';
 import { useScrollHeight } from 'hooks/useScrollHeight.ts';
 import { useContainerHeight } from 'hooks/useContainerHeight.ts';
@@ -6,7 +6,7 @@ import { getInitCache } from 'utils/getInitCache.ts';
 import { FORCE_UPDATE_VALUE, OVERSCAN } from 'constants.ts';
 import { CacheItem } from 'types.ts';
 
-export const useVirtualize = (items: ReactElement[]) => {
+export const useVirtualize = (items: ReactNode[]) => {
 	const totalRowsNumber = useMemo(() => items.length, [items.length]);
 
 	const [scroll, setScroll] = useState<number>(0);

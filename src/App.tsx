@@ -1,10 +1,8 @@
-import { Virtualized } from 'components/Vitrualized/Virtualized.tsx';
+import { Virtualized } from 'components/Virtualized.tsx';
 import { loremIpsum } from 'lorem-ipsum';
-import { Expandable } from './components/Presentation/Expandable.tsx';
-import styles from './App.module.css';
 
 const items = Array.from(
-	{ length: 100_000 },
+	{ length: 400_000 },
 	(_, i) =>
 		`${i}. ${loremIpsum({
 			format: 'plain',
@@ -15,16 +13,14 @@ const items = Array.from(
 		})}`
 );
 
-function App() {
-	return (
-		<div className={styles.container}>
-			<Virtualized
-				items={items.map(el => (
-					<Expandable>{el}</Expandable>
-				))}
-			/>
-		</div>
-	);
-}
+const App = () => (
+	<Virtualized height={550} width={500}>
+		{items.map((el, index) => (
+			<div key={index} style={{ padding: 12 }}>
+				{el}
+			</div>
+		))}
+	</Virtualized>
+);
 
 export default App;

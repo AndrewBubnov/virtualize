@@ -1,8 +1,5 @@
-import { ReactElement, ReactNode } from 'react';
+import { ReactNode } from 'react';
 
-export interface VirtualizedProps {
-	items: ReactElement[];
-}
 export type CacheItem = { offset: number; height: number };
 
 export interface SetHeightArgs {
