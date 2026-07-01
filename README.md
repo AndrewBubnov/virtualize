@@ -40,6 +40,8 @@ No item render functions, no size estimators, no manual measurement hooks requir
 Just pass:
 
 ```tsx
+import Virtualized from 'clear-virtual-list';
+
 <Virtualized height={500} width={400}>
   {items.map(item => <div>{item}</div>)}
 </Virtualized>
