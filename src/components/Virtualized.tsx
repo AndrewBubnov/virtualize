@@ -2,12 +2,12 @@ import { CSSProperties, ReactNode } from 'react';
 import { AutoSizer } from 'components/AutoSizer';
 import { useVirtualize } from 'hooks/useVirtualize';
 
-export interface VirtualizedProps {
+export type VirtualizedProps = {
 	children: ReactNode[];
 	height: CSSProperties['height'];
 	width: CSSProperties['width'];
 	className?: string;
-}
+};
 
 export const Virtualized = ({ children, height, width, className }: VirtualizedProps) => {
 	const { rows, mountHandler, resizeHandler, scrollHeight, containerRef, scrollHandler } = useVirtualize(children);

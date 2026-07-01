@@ -4,8 +4,8 @@ import { useScrollHeight } from 'hooks/useScrollHeight';
 import { useContainerHeight } from 'hooks/useContainerHeight';
 import { CacheItem, getInitCache } from 'utils/getInitCache';
 
-export const OVER_SCAN = 2;
-export const FORCE_UPDATE_VALUE = 0.001;
+const OVER_SCAN = 2;
+const FORCE_UPDATE_VALUE = 0.001;
 
 export const useVirtualize = (items: ReactNode[]) => {
 	const totalRowsNumber = useMemo(() => items.length, [items.length]);
