@@ -24,7 +24,7 @@ const DEFAULT_OVERSCAN = 3;
 
 export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: VirtualizerOptions): Virtualizer {
 	const [scrollOffset, setScrollOffset] = useState(0);
-	const [, setIsRefSet] = useState<boolean>(false);
+	const [isRefSet, setIsRefSet] = useState(false);
 	const scrollElementRef = useRef<HTMLElement | null>(null);
 	const rafRef = useRef<number | null>(null);
 
@@ -72,7 +72,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 		}
 
 		return items;
-	}, [scrollOffset, count, estimateSize, overscan]);
+	}, [scrollOffset, count, estimateSize, overscan, isRefSet]);
 
 	const handleScroll = useCallback(() => {
 		if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
