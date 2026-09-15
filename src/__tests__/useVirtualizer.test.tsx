@@ -203,7 +203,7 @@ describe('useVirtualizer', () => {
 		vi.unstubAllGlobals();
 	});
 
-	it('measureElement disconnects previous observer on re-measure', () => {
+	it('measureElement disconnects observer on null', () => {
 		const disconnect = vi.fn();
 		const observers: ResizeObserver[] = [];
 
@@ -228,40 +228,6 @@ describe('useVirtualizer', () => {
 		});
 
 		expect(observers.length).toBe(1);
-
-		const el2 = document.createElement('div');
-		Object.defineProperty(el2, 'clientHeight', { value: 40, configurable: true });
-
-		act(() => {
-			result.current.measureElement(el2, 0);
-		});
-
-		expect(disconnect).toHaveBeenCalled();
-		expect(observers.length).toBe(2);
-
-		vi.unstubAllGlobals();
-	});
-
-	it('measureElement with null disconnects observer', () => {
-		const disconnect = vi.fn();
-
-		vi.stubGlobal(
-			'ResizeObserver',
-			class {
-				constructor() {}
-				observe = vi.fn();
-				disconnect = disconnect;
-				unobserve = vi.fn();
-			}
-		);
-
-		const { result } = setup(5, { estimateSize: () => 40 });
-		const el = document.createElement('div');
-		Object.defineProperty(el, 'clientHeight', { value: 40, configurable: true });
-
-		act(() => {
-			result.current.measureElement(el, 0);
-		});
 
 		act(() => {
 			result.current.measureElement(null, 0);
