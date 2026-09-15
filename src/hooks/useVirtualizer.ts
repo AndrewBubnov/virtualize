@@ -1,30 +1,22 @@
 import { useCallback, useReducer, useRef } from 'react';
 import { useLatest } from './useLatest.ts';
 
-export type VirtualItem = {
+type VirtualItem = {
 	index: number;
 	start: number;
 	size: number;
 	end: number;
 };
 
-export type VirtualizerOptions = {
+type Options = {
 	count: number;
 	estimateSize: (index: number) => number;
 	overscan?: number;
 };
 
-export type Virtualizer = {
-	virtualItems: VirtualItem[];
-	scrollHeight: number;
-	scrollToIndex: (index: number, options?: { align?: 'start' | 'center' | 'end' }) => void;
-	scrollRef: (element: HTMLElement | null) => void;
-	measureElement: (element: HTMLElement | null, index: number) => void;
-};
-
 const DEFAULT_OVERSCAN = 3;
 
-export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: VirtualizerOptions): Virtualizer {
+export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: Options) {
 	const [, forceRender] = useReducer(x => x + 1, 0);
 	const scrollElementRef = useRef<HTMLElement | null>(null);
 	const rafRef = useRef<number | null>(null);
