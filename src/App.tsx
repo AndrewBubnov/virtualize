@@ -1,18 +1,5 @@
-import { Virtualized } from './components/Virtualized';
-import { VirtualizedTable, Column } from './components/VirtualizedTable';
-import { loremIpsum } from 'lorem-ipsum';
-
-const items = Array.from(
-	{ length: 400_000 },
-	(_, i) =>
-		`${i}. ${loremIpsum({
-			format: 'plain',
-			paragraphLowerBound: 3,
-			paragraphUpperBound: 7,
-			sentenceLowerBound: 5,
-			sentenceUpperBound: 35,
-		})}`
-);
+import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
+import { useVirtualizer } from './hooks/useVirtualizer';
 
 type User = {
 	id: number;
@@ -45,41 +32,113 @@ const tableData: User[] = Array.from({ length: 100_000 }, (_, i) => ({
 	status: i % 3 === 0 ? 'inactive' : 'active',
 }));
 
-const columns: Column<User>[] = [
-	{ key: 'id', header: 'ID', width: 70, align: 'right' },
-	{ key: 'name', header: 'Name', width: 180 },
-	{ key: 'email', header: 'Email', width: 220 },
-	{ key: 'role', header: 'Role', width: 120 },
-	{
-		key: 'status',
+const columnHelper = createColumnHelper<User>();
+
+const columns = [
+	columnHelper.accessor('id', { header: 'ID', size: 70 }),
+	columnHelper.accessor('name', { header: 'Name', size: 180 }),
+	columnHelper.accessor('email', { header: 'Email', size: 220 }),
+	columnHelper.accessor('role', { header: 'Role', size: 120 }),
+	columnHelper.accessor('status', {
 		header: 'Status',
-		width: 100,
-		align: 'center',
-		render: row => (
-			<span style={{ color: row.status === 'active' ? 'green' : 'red', fontWeight: 600 }}>{row.status}</span>
+		size: 100,
+		cell: info => (
+			<span style={{ color: info.getValue() === 'active' ? 'green' : 'red', fontWeight: 600 }}>
+				{info.getValue()}
+			</span>
 		),
-	},
+	}),
 ];
+
+const VirtualTable = () => {
+	const table = useReactTable({
+		data: tableData,
+		columns,
+		getCoreRowModel: getCoreRowModel(),
+	});
+
+	const rows = table.getRowModel().rows;
+
+	const rowVirtualizer = useVirtualizer({
+		count: rows.length,
+		getScrollElement: () => document.getElementById('table-scroll'),
+		estimateSize: () => 44,
+		overscan: 10,
+	});
+
+	return (
+		<div
+			id="table-scroll"
+			ref={rowVirtualizer.scrollRef}
+			style={{ height: 550, overflow: 'auto', border: '1px solid #ddd', borderRadius: 4 }}
+		>
+			<div style={{ position: 'relative', height: rowVirtualizer.getTotalSize() }}>
+				{table.getHeaderGroups().map(headerGroup => (
+					<div
+						key={headerGroup.id}
+						style={{
+							position: 'sticky',
+							top: 0,
+							zIndex: 1,
+							display: 'flex',
+							background: '#f5f5f5',
+							fontWeight: 600,
+							borderBottom: '2px solid #ddd',
+						}}
+					>
+						{headerGroup.headers.map(header => (
+							<div
+								key={header.id}
+								style={{ width: header.getSize(), padding: '8px 12px', flexShrink: 0 }}
+							>
+								{flexRender(header.column.columnDef.header, header.getContext())}
+							</div>
+						))}
+					</div>
+				))}
+
+				{rowVirtualizer.getVirtualItems().map(virtualRow => {
+					const row = rows[virtualRow.index];
+					return (
+						<div
+							key={row.id}
+							style={{
+								position: 'absolute',
+								top: 0,
+								left: 0,
+								width: '100%',
+								height: virtualRow.size,
+								transform: `translateY(${virtualRow.start}px)`,
+								display: 'flex',
+								borderBottom: '1px solid #eee',
+							}}
+						>
+							{row.getVisibleCells().map(cell => (
+								<div
+									key={cell.id}
+									style={{
+										width: cell.column.getSize(),
+										padding: '8px 12px',
+										flexShrink: 0,
+										overflow: 'hidden',
+										textOverflow: 'ellipsis',
+										whiteSpace: 'nowrap',
+									}}
+								>
+									{flexRender(cell.column.columnDef.cell, cell.getContext())}
+								</div>
+							))}
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
+};
 
 const App = () => (
 	<div style={{ display: 'flex', flexDirection: 'column', gap: 32, padding: 24 }}>
-		<div>
-			<h2>Virtual List</h2>
-			<div style={{ width: 500 }}>
-				<Virtualized height={550}>
-					{items.map((el, index) => (
-						<div key={index} style={{ padding: 12 }}>
-							{el}
-						</div>
-					))}
-				</Virtualized>
-			</div>
-		</div>
-
-		<div>
-			<h2>Virtual Table — 100k rows</h2>
-			<VirtualizedTable columns={columns} rows={tableData} height={550} rowKey={row => row.id} />
-		</div>
+		<VirtualTable />
 	</div>
 );
 
