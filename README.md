@@ -8,7 +8,7 @@ Unlike traditional virtualized list libraries that rely on explicit item measure
 
 ## ⚙️ API
 
-`<Virtualized />`
+`<Virtualize />`
 
 A container component that virtualizes a list of ReactNode elements with dynamic height support.
 
@@ -40,11 +40,11 @@ No item render functions, no size estimators, no manual measurement hooks requir
 Just pass:
 
 ```tsx
-import Virtualized from 'clear-virtual-list';
+import Virtualize from 'clear-virtual-list';
 
-<Virtualized height={500} width={400}>
+<Virtualize height={500} width={400}>
   {items.map(item => <div>{item}</div>)}
-</Virtualized>
+</Virtualize>
 ```
 
 ### 📏 Dynamic height support
