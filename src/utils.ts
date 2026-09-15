@@ -25,5 +25,5 @@ export const findOffset = (cache: CacheItem[], scroll: number) => {
 		}
 	}
 
-	return left;
+	return right;
 };
