@@ -60,7 +60,9 @@ const tableData: User[] = Array.from({ length: 100_000 }, (_, i) => ({
 const columnHelper = createColumnHelper<User>();
 
 const ExpandedContent = ({ row }: { row: Row<User> }) => (
-	<div style={{ padding: '8px 16px', background: '#fafafa', borderTop: '1px solid #eee', fontSize: 13, color: '#555' }}>
+	<div
+		style={{ padding: '8px 16px', background: '#fafafa', borderTop: '1px solid #eee', fontSize: 13, color: '#555' }}
+	>
 		<strong>Details:</strong> {details[row.original.id % details.length]}
 	</div>
 );
@@ -114,7 +116,7 @@ const VirtualTable = () => {
 
 	const rows = table.getRowModel().rows;
 
-	const rowVirtualizer = useVirtualizer({
+	const { virtualItems, scrollHeight, scrollRef, measureElement } = useVirtualizer({
 		count: rows.length,
 		estimateSize: () => 44,
 		overscan: 10,
@@ -123,10 +125,10 @@ const VirtualTable = () => {
 	return (
 		<div
 			id="table-scroll"
-			ref={rowVirtualizer.scrollRef}
+			ref={scrollRef}
 			style={{ height: 550, overflow: 'auto', border: '1px solid #ddd', borderRadius: 4 }}
 		>
-			<div style={{ position: 'relative', height: rowVirtualizer.scrollHeight }}>
+			<div style={{ position: 'relative', height: scrollHeight }}>
 				{table.getHeaderGroups().map(headerGroup => (
 					<div
 						key={headerGroup.id}
@@ -151,13 +153,13 @@ const VirtualTable = () => {
 					</div>
 				))}
 
-				{rowVirtualizer.virtualItems.map(virtualRow => {
+				{virtualItems.map(virtualRow => {
 					const row = rows[virtualRow.index];
 					const isExpanded = row.getIsExpanded();
 					return (
 						<div
 							key={row.id}
-							ref={el => rowVirtualizer.measureElement(el, virtualRow.index)}
+							ref={el => measureElement(el, virtualRow.index)}
 							style={{
 								position: 'absolute',
 								top: 0,
