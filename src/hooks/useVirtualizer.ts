@@ -9,30 +9,26 @@ export type VirtualItem = {
 
 export type VirtualizerOptions = {
 	count: number;
-	getScrollElement: () => HTMLElement | null;
 	estimateSize: (index: number) => number;
 	overscan?: number;
 };
 
 export type Virtualizer = {
-	getVirtualItems: () => VirtualItem[];
-	getTotalSize: () => number;
+	virtualItems: VirtualItem[];
+	scrollHeight: number;
 	scrollToIndex: (index: number, options?: { align?: 'start' | 'center' | 'end' }) => void;
 	scrollRef: (element: HTMLElement | null) => void;
 };
 
 const DEFAULT_OVERSCAN = 3;
 
-export function useVirtualizer(options: VirtualizerOptions): Virtualizer {
-	const { count, getScrollElement, estimateSize, overscan = DEFAULT_OVERSCAN } = options;
-
+export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: VirtualizerOptions): Virtualizer {
 	const [scrollOffset, setScrollOffset] = useState(0);
-	const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+	const [, setIsRefSet] = useState<boolean>(false);
 	const scrollElementRef = useRef<HTMLElement | null>(null);
-	const getScrollElementRef = useRef(getScrollElement);
 	const rafRef = useRef<number | null>(null);
 
-	const totalSize = useMemo(() => {
+	const scrollHeight = useMemo(() => {
 		let size = 0;
 		for (let i = 0; i < count; i++) {
 			size += estimateSize(i);
@@ -76,28 +72,28 @@ export function useVirtualizer(options: VirtualizerOptions): Virtualizer {
 		}
 
 		return items;
-	}, [scrollOffset, count, estimateSize, overscan, scrollElement]);
+	}, [scrollOffset, count, estimateSize, overscan]);
 
 	const handleScroll = useCallback(() => {
 		if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
 
 		rafRef.current = requestAnimationFrame(() => {
-			const el = getScrollElementRef.current();
+			const el = scrollElementRef.current;
 			if (el) setScrollOffset(el.scrollTop);
 		});
 	}, []);
 
 	const scrollRef = useCallback(
 		(element: HTMLElement | null) => {
-			if (scrollElementRef.current) {
-				scrollElementRef.current.removeEventListener('scroll', handleScroll);
-			}
+			if (scrollElementRef.current) scrollElementRef.current.removeEventListener('scroll', handleScroll);
+
 			scrollElementRef.current = element;
+
 			if (element) {
 				element.addEventListener('scroll', handleScroll, { passive: true });
 				setScrollOffset(element.scrollTop);
 			}
-			setScrollElement(element);
+			setIsRefSet(true);
 		},
 		[handleScroll]
 	);
@@ -124,5 +120,5 @@ export function useVirtualizer(options: VirtualizerOptions): Virtualizer {
 		[estimateSize, count]
 	);
 
-	return { getVirtualItems: () => virtualItems, getTotalSize: () => totalSize, scrollToIndex, scrollRef };
+	return { virtualItems, scrollHeight, scrollToIndex, scrollRef };
 }

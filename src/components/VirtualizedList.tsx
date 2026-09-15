@@ -2,7 +2,7 @@ import { CSSProperties, ReactNode } from 'react';
 import { AutoSizer } from 'components/AutoSizer';
 import { useVirtualize } from 'hooks/useVirtualize';
 
-export type VirtualizedProps = {
+export type VirtualizeListProps = {
 	children: ReactNode[];
 	height: CSSProperties['height'];
 	width?: CSSProperties['width'];
@@ -13,14 +13,14 @@ export type VirtualizedProps = {
 
 const OVER_SCAN = 3;
 
-export const Virtualized = ({
+export const VirtualizedList = ({
 	children,
 	height,
 	className,
 	style,
 	overScan = OVER_SCAN,
 	width = 'auto',
-}: VirtualizedProps) => {
+}: VirtualizeListProps) => {
 	const { rows, mountHandler, resizeHandler, scrollHeight, containerRef, scrollHandler } = useVirtualize(
 		children,
 		overScan

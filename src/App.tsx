@@ -35,13 +35,12 @@ const tableData: User[] = Array.from({ length: 100_000 }, (_, i) => ({
 const columnHelper = createColumnHelper<User>();
 
 const columns = [
-	columnHelper.accessor('id', { header: 'ID', size: 70 }),
-	columnHelper.accessor('name', { header: 'Name', size: 180 }),
-	columnHelper.accessor('email', { header: 'Email', size: 220 }),
-	columnHelper.accessor('role', { header: 'Role', size: 120 }),
+	columnHelper.accessor('id', { header: 'ID' }),
+	columnHelper.accessor('name', { header: 'Name' }),
+	columnHelper.accessor('email', { header: 'Email' }),
+	columnHelper.accessor('role', { header: 'Role' }),
 	columnHelper.accessor('status', {
 		header: 'Status',
-		size: 100,
 		cell: info => (
 			<span style={{ color: info.getValue() === 'active' ? 'green' : 'red', fontWeight: 600 }}>
 				{info.getValue()}
@@ -61,7 +60,6 @@ const VirtualTable = () => {
 
 	const rowVirtualizer = useVirtualizer({
 		count: rows.length,
-		getScrollElement: () => document.getElementById('table-scroll'),
 		estimateSize: () => 44,
 		overscan: 10,
 	});
@@ -72,7 +70,7 @@ const VirtualTable = () => {
 			ref={rowVirtualizer.scrollRef}
 			style={{ height: 550, overflow: 'auto', border: '1px solid #ddd', borderRadius: 4 }}
 		>
-			<div style={{ position: 'relative', height: rowVirtualizer.getTotalSize() }}>
+			<div style={{ position: 'relative', height: rowVirtualizer.scrollHeight }}>
 				{table.getHeaderGroups().map(headerGroup => (
 					<div
 						key={headerGroup.id}
@@ -97,7 +95,7 @@ const VirtualTable = () => {
 					</div>
 				))}
 
-				{rowVirtualizer.getVirtualItems().map(virtualRow => {
+				{rowVirtualizer.virtualItems.map(virtualRow => {
 					const row = rows[virtualRow.index];
 					return (
 						<div
