@@ -1,6 +1,4 @@
-[![npm version](https://badge.fury.io/js/clear-virtual-list.svg)](https://www.npmjs.com/package/clear-virtual-list)
-
-# React Virtualized Resizable List
+# Clear virtualize
 
 A React virtualization utility for rendering large lists with **dynamic, resizable item heights**, built around automatic DOM measurement and an internal layout cache.
 
@@ -8,7 +6,149 @@ Unlike traditional virtualized list libraries that rely on explicit item measure
 
 ## ⚙️ API
 
-`<Virtualize />`
+### `useVirtualizer` (hook)
+
+A hook-based virtualizer for full control over rendering. Works with any data source — tables (react-table), plain lists, or custom components.
+
+```tsx
+import { useVirtualizer } from 'clear-virtualize';
+
+const { virtualItems, scrollHeight, scrollRef, measureElement, scrollToIndex } = useVirtualizer({
+  count: 100000,
+  estimateSize: () => 44, // approximate average row height in px
+  overscan: 10,
+});
+```
+
+`estimateSize` returns a **rough average height** used for initial scroll calculations. It is **not** a fixed height — once rows mount, `measureElement` measures their real DOM size via ResizeObserver and overrides the estimate. Pass a value close to your expected average row height.
+
+| Option        | Type                          | Description                                                                    |
+| ------------- | ----------------------------- | ------------------------------------------------------------------------------ |
+| `count`       | `number`                      | Total number of items                                                          |
+| `estimateSize`| `(index: number) => number`   | Approximate average row height in px (overridden by real measurements at runtime) |
+| `overscan`    | `number`                      | Extra items rendered above/below viewport (default: 3)                         |
+
+| Return value    | Type | Description |
+| --------------- | ---- | ----------- |
+| `virtualItems`  | `VirtualItem[]` | Items to render: `{ index, start, size, end }` |
+| `scrollHeight`  | `number` | Total scrollable height (px) |
+| `scrollRef`     | `(el: HTMLElement \| null) => void` | Callback ref — attach to scroll container |
+| `measureElement`| `(el: HTMLElement \| null, index: number) => void` | Attach to each row for dynamic height measurement |
+| `scrollToIndex` | `(index, options?) => void` | Scroll to item (`align: 'start' \| 'center' \| 'end'`) |
+
+#### Table with react-table
+
+```tsx
+import { useReactTable, getCoreRowModel, flexRender } from '@tanstack/react-table';
+import { useVirtualizer } from 'clear-virtualize';
+
+const Table = ({ data, columns }) => {
+  const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() });
+  const rows = table.getRowModel().rows;
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    estimateSize: () => 44, // approximate average row height
+    overscan: 10,
+  });
+
+  return (
+    <div ref={rowVirtualizer.scrollRef} style={{ height: 500, overflow: 'auto' }}>
+      <div style={{ position: 'relative', height: rowVirtualizer.scrollHeight }}>
+        {rowVirtualizer.virtualItems.map(virtualRow => {
+          const row = rows[virtualRow.index];
+          return (
+            <div
+              key={row.id}
+              ref={el => rowVirtualizer.measureElement(el, virtualRow.index)}
+              style={{
+                position: 'absolute',
+                top: 0,
+                transform: `translateY(${virtualRow.start}px)`,
+                width: '100%',
+              }}
+            >
+              {row.getVisibleCells().map(cell => (
+                <div key={cell.id} style={{ display: 'inline-block', padding: 8 }}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+```
+
+**Important:** do not set a fixed `height` on rows — let `measureElement` + ResizeObserver measure the actual height. Use `transform: translateY(...)` for positioning.
+
+#### Dynamic row height (expand/collapse)
+
+`measureElement` uses ResizeObserver under the hood. When a row's height changes (e.g. user expands a row), positions of all subsequent rows are recalculated automatically:
+
+```tsx
+const [expanded, setExpanded] = useState({});
+
+// In the table setup:
+const table = useReactTable({
+  data, columns,
+  state: { expanded },
+  onExpandedChange: old => setExpanded(old),
+  getExpandedRowModel: getCoreRowModel(),
+  getCoreRowModel: getCoreRowModel(),
+});
+
+// In the row renderer:
+<div ref={el => rowVirtualizer.measureElement(el, virtualRow.index)}>
+  <div style={{ display: 'flex' }}>
+    {row.getVisibleCells().map(cell => /* ... */)}
+  </div>
+  {row.getIsExpanded() && (
+    <div>Expanded content here — height is measured automatically</div>
+  )}
+</div>
+```
+
+#### Plain list
+
+```tsx
+const items = Array.from({ length: 100000 }, (_, i) => `Item ${i}`);
+
+const List = () => {
+  const { virtualItems, scrollHeight, scrollRef, measureElement } = useVirtualizer({
+    count: items.length,
+    estimateSize: () => 40,
+    overscan: 5,
+  });
+
+  return (
+    <div ref={scrollRef} style={{ height: 400, overflow: 'auto' }}>
+      <div style={{ position: 'relative', height: scrollHeight }}>
+        {virtualItems.map(virtualRow => (
+          <div
+            key={virtualRow.index}
+            ref={el => measureElement(el, virtualRow.index)}
+            style={{
+              position: 'absolute',
+              top: 0,
+              transform: `translateY(${virtualRow.start}px)`,
+              width: '100%',
+            }}
+          >
+            {items[virtualRow.index]}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+```
+
+---
+
+### `<Virtualize />` (component)
 
 A container component that virtualizes a list of ReactNode elements with dynamic height support.
 
@@ -40,7 +180,7 @@ No item render functions, no size estimators, no manual measurement hooks requir
 Just pass:
 
 ```tsx
-import Virtualize from 'clear-virtual-list';
+import Virtualize from 'clear-virtualize';
 
 <Virtualize height={500} width={400}>
   {items.map(item => <div>{item}</div>)}

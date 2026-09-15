@@ -32,7 +32,7 @@ export const Virtualize = ({
 			style={{ height, width, overflow: 'auto', lineHeight: 1.5, ...style }}
 			className={className}
 		>
-			<div style={{ position: 'relative', height: `${scrollHeight}px` }}>
+			<div style={{ position: 'relative', height: scrollHeight }}>
 				{rows.map(el => (
 					<AutoSizer
 						key={el.index}
