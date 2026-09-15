@@ -105,15 +105,14 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 	);
 
 	const measureElement = useCallback((element: HTMLElement | null, index: number) => {
-		if (observersRef.current.has(index)) {
-			observersRef.current.get(index)!.disconnect();
+		if (!element) {
+			observersRef.current.get(index)?.disconnect();
 			observersRef.current.delete(index);
+			return;
 		}
 
-		if (!element) return;
-
-		const observer = new ResizeObserver(entries => {
-			const height = entries[0]?.borderBoxSize[0]?.blockSize;
+		const observer = new ResizeObserver(([entry]) => {
+			const height = entry?.borderBoxSize[0]?.blockSize;
 			if (height == null) return;
 
 			const prev = measuredCacheRef.current.get(index);
