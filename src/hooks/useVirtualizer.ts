@@ -1,4 +1,5 @@
 import { useCallback, useReducer, useRef } from 'react';
+import { useLatest } from './useLatest.ts';
 
 export type VirtualItem = {
 	index: number;
@@ -30,10 +31,11 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 	const scrollOffsetRef = useRef(0);
 	const observersRef = useRef<Map<number, ResizeObserver>>(new Map());
 	const measuredCacheRef = useRef<Map<number, number>>(new Map());
+	const estimateSizeRef = useLatest(estimateSize);
 
 	const getEffectiveSize = useCallback(
-		(index: number) => measuredCacheRef.current.get(index) ?? estimateSize(index),
-		[estimateSize]
+		(index: number) => measuredCacheRef.current.get(index) ?? estimateSizeRef.current(index),
+		[estimateSizeRef]
 	);
 
 	const computeItems = useCallback(
@@ -102,31 +104,28 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 		[handleScroll]
 	);
 
-	const measureElement = useCallback(
-		(element: HTMLElement | null, index: number) => {
-			if (observersRef.current.has(index)) {
-				observersRef.current.get(index)!.disconnect();
-				observersRef.current.delete(index);
-			}
+	const measureElement = useCallback((element: HTMLElement | null, index: number) => {
+		if (observersRef.current.has(index)) {
+			observersRef.current.get(index)!.disconnect();
+			observersRef.current.delete(index);
+		}
 
-			if (!element) return;
+		if (!element) return;
 
-			const observer = new ResizeObserver(entries => {
-				const height = entries[0]?.borderBoxSize[0]?.blockSize;
-				if (height == null) return;
+		const observer = new ResizeObserver(entries => {
+			const height = entries[0]?.borderBoxSize[0]?.blockSize;
+			if (height == null) return;
 
-				const prev = measuredCacheRef.current.get(index);
-				if (prev === height) return;
+			const prev = measuredCacheRef.current.get(index);
+			if (prev === height) return;
 
-				measuredCacheRef.current.set(index, height);
-				forceRender();
-			});
+			measuredCacheRef.current.set(index, height);
+			forceRender();
+		});
 
-			observer.observe(element);
-			observersRef.current.set(index, observer);
-		},
-		[]
-	);
+		observer.observe(element);
+		observersRef.current.set(index, observer);
+	}, []);
 
 	const { items, total } = computeItems(scrollOffsetRef.current);
 
