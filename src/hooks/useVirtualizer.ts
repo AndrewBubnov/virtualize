@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useReducer, useRef } from 'react';
 
 export type VirtualItem = {
 	index: number;
@@ -18,68 +18,72 @@ export type Virtualizer = {
 	scrollHeight: number;
 	scrollToIndex: (index: number, options?: { align?: 'start' | 'center' | 'end' }) => void;
 	scrollRef: (element: HTMLElement | null) => void;
+	measureElement: (element: HTMLElement | null, index: number) => void;
 };
 
 const DEFAULT_OVERSCAN = 3;
 
 export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: VirtualizerOptions): Virtualizer {
-	const [scrollOffset, setScrollOffset] = useState(0);
-	const [isRefSet, setIsRefSet] = useState(false);
+	const [, forceRender] = useReducer(x => x + 1, 0);
 	const scrollElementRef = useRef<HTMLElement | null>(null);
 	const rafRef = useRef<number | null>(null);
+	const scrollOffsetRef = useRef(0);
+	const observersRef = useRef<Map<number, ResizeObserver>>(new Map());
+	const measuredCacheRef = useRef<Map<number, number>>(new Map());
 
-	const scrollHeight = useMemo(() => {
-		let size = 0;
-		for (let i = 0; i < count; i++) {
-			size += estimateSize(i);
-		}
-		return size;
-	}, [count, estimateSize]);
+	const getEffectiveSize = useCallback(
+		(index: number) => measuredCacheRef.current.get(index) ?? estimateSize(index),
+		[estimateSize]
+	);
 
-	const virtualItems = useMemo(() => {
-		const el = scrollElementRef.current;
-		if (!el || count === 0) return [];
+	const computeItems = useCallback(
+		(scrollOffset: number) => {
+			const el = scrollElementRef.current;
+			if (!el || count === 0) return { items: [], total: 0 };
 
-		const containerHeight = el.clientHeight;
+			const containerHeight = el.clientHeight;
 
-		let startIndex = 0;
-		let offset = 0;
-		while (startIndex < count && offset < scrollOffset) {
-			offset += estimateSize(startIndex);
-			startIndex++;
-		}
+			const offsets: number[] = new Array(count);
+			let total = 0;
+			for (let i = 0; i < count; i++) {
+				offsets[i] = total;
+				total += getEffectiveSize(i);
+			}
 
-		startIndex = Math.max(startIndex - overscan, 0);
+			let startIndex = 0;
+			while (startIndex < count && offsets[startIndex] < scrollOffset) {
+				startIndex++;
+			}
 
-		let endIndex = startIndex;
-		let accumulated = 0;
-		while (endIndex < count && accumulated < containerHeight) {
-			accumulated += estimateSize(endIndex);
-			endIndex++;
-		}
-		endIndex = Math.min(endIndex + overscan, count);
+			startIndex = Math.max(startIndex - overscan, 0);
 
-		const items: VirtualItem[] = [];
-		let start = 0;
-		for (let i = 0; i < startIndex; i++) {
-			start += estimateSize(i);
-		}
+			let endIndex = startIndex;
+			while (endIndex < count && offsets[endIndex] - offsets[startIndex] < containerHeight) {
+				endIndex++;
+			}
+			endIndex = Math.min(endIndex + overscan, count);
 
-		for (let i = startIndex; i < endIndex; i++) {
-			const size = estimateSize(i);
-			items.push({ index: i, start, size, end: start + size });
-			start += size;
-		}
+			const items: VirtualItem[] = [];
+			for (let i = startIndex; i < endIndex; i++) {
+				const size = getEffectiveSize(i);
+				const start = offsets[i];
+				items.push({ index: i, start, size, end: start + size });
+			}
 
-		return items;
-	}, [scrollOffset, count, estimateSize, overscan, isRefSet]);
+			return { items, total };
+		},
+		[count, overscan, getEffectiveSize]
+	);
 
 	const handleScroll = useCallback(() => {
 		if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
 
 		rafRef.current = requestAnimationFrame(() => {
 			const el = scrollElementRef.current;
-			if (el) setScrollOffset(el.scrollTop);
+			if (el) {
+				scrollOffsetRef.current = el.scrollTop;
+				forceRender();
+			}
 		});
 	}, []);
 
@@ -91,12 +95,40 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 
 			if (element) {
 				element.addEventListener('scroll', handleScroll, { passive: true });
-				setScrollOffset(element.scrollTop);
+				scrollOffsetRef.current = element.scrollTop;
 			}
-			setIsRefSet(true);
+			forceRender();
 		},
 		[handleScroll]
 	);
+
+	const measureElement = useCallback(
+		(element: HTMLElement | null, index: number) => {
+			if (observersRef.current.has(index)) {
+				observersRef.current.get(index)!.disconnect();
+				observersRef.current.delete(index);
+			}
+
+			if (!element) return;
+
+			const observer = new ResizeObserver(entries => {
+				const height = entries[0]?.borderBoxSize[0]?.blockSize;
+				if (height == null) return;
+
+				const prev = measuredCacheRef.current.get(index);
+				if (prev === height) return;
+
+				measuredCacheRef.current.set(index, height);
+				forceRender();
+			});
+
+			observer.observe(element);
+			observersRef.current.set(index, observer);
+		},
+		[]
+	);
+
+	const { items, total } = computeItems(scrollOffsetRef.current);
 
 	const scrollToIndex = useCallback(
 		(index: number, options?: { align?: 'start' | 'center' | 'end' }) => {
@@ -106,19 +138,19 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			const align = options?.align ?? 'start';
 			let offset = 0;
 			for (let i = 0; i < index; i++) {
-				offset += estimateSize(i);
+				offset += getEffectiveSize(i);
 			}
 
 			if (align === 'center') {
-				offset -= (el.clientHeight - estimateSize(index)) / 2;
+				offset -= (el.clientHeight - getEffectiveSize(index)) / 2;
 			} else if (align === 'end') {
-				offset -= el.clientHeight - estimateSize(index);
+				offset -= el.clientHeight - getEffectiveSize(index);
 			}
 
 			el.scrollTop = Math.max(0, offset);
 		},
-		[estimateSize, count]
+		[count, getEffectiveSize]
 	);
 
-	return { virtualItems, scrollHeight, scrollToIndex, scrollRef };
+	return { virtualItems: items, scrollHeight: total, scrollToIndex, scrollRef, measureElement };
 }

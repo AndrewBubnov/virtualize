@@ -13,7 +13,7 @@ export type VirtualizeListProps = {
 
 const OVER_SCAN = 3;
 
-export const VirtualizedList = ({
+export const Virtualize = ({
 	children,
 	height,
 	className,

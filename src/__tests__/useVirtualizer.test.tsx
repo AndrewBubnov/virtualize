@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useVirtualizer } from '../hooks/useVirtualizer';
 
@@ -126,5 +126,149 @@ describe('useVirtualizer', () => {
 	it('returns empty items for count 0', () => {
 		const { result } = setup(0, { clientHeight: 200 });
 		expect(result.current.virtualItems).toEqual([]);
+	});
+
+	it('exposes measureElement in return value', () => {
+		const { result } = setup(10);
+		expect(typeof result.current.measureElement).toBe('function');
+	});
+
+	it('measureElement updates scrollHeight after ResizeObserver callback', () => {
+		vi.stubGlobal(
+			'ResizeObserver',
+			class {
+				constructor(cb: ResizeObserverCallback) {
+					cb([{ borderBoxSize: [{ blockSize: 80 }] } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver);
+				}
+				observe = vi.fn();
+				disconnect = vi.fn();
+				unobserve = vi.fn();
+			}
+		);
+
+		const { result } = setup(5, { estimateSize: () => 40 });
+
+		expect(result.current.scrollHeight).toBe(200);
+
+		const el = document.createElement('div');
+		Object.defineProperty(el, 'clientHeight', { value: 80, configurable: true });
+
+		act(() => {
+			result.current.measureElement(el, 0);
+		});
+
+		expect(result.current.scrollHeight).toBe(80 + 4 * 40);
+
+		vi.unstubAllGlobals();
+	});
+
+	it('measureElement with ResizeObserver updates height', () => {
+		let resizeCallback: ResizeObserverCallback | undefined;
+		const mockObserve = vi.fn();
+		const mockDisconnect = vi.fn();
+
+		vi.stubGlobal(
+			'ResizeObserver',
+			class {
+				constructor(cb: ResizeObserverCallback) {
+					resizeCallback = cb;
+				}
+				observe = mockObserve;
+				disconnect = mockDisconnect;
+				unobserve = vi.fn();
+			}
+		);
+
+		const { result } = setup(5, { estimateSize: () => 40 });
+		const el = document.createElement('div');
+		Object.defineProperty(el, 'clientHeight', { value: 40, configurable: true });
+
+		act(() => {
+			result.current.measureElement(el, 2);
+		});
+
+		expect(mockObserve).toHaveBeenCalledWith(el);
+
+		const prevHeight = result.current.scrollHeight;
+
+		act(() => {
+			resizeCallback!(
+				[{ borderBoxSize: [{ blockSize: 100 }] } as unknown as ResizeObserverEntry],
+				{} as ResizeObserver
+			);
+		});
+
+		expect(result.current.scrollHeight).toBe(prevHeight - 40 + 100);
+
+		vi.unstubAllGlobals();
+	});
+
+	it('measureElement disconnects previous observer on re-measure', () => {
+		const disconnect = vi.fn();
+		const observers: ResizeObserver[] = [];
+
+		vi.stubGlobal(
+			'ResizeObserver',
+			class {
+				constructor() {
+					observers.push(this as unknown as ResizeObserver);
+				}
+				observe = vi.fn();
+				disconnect = disconnect;
+				unobserve = vi.fn();
+			}
+		);
+
+		const { result } = setup(5, { estimateSize: () => 40 });
+		const el = document.createElement('div');
+		Object.defineProperty(el, 'clientHeight', { value: 40, configurable: true });
+
+		act(() => {
+			result.current.measureElement(el, 0);
+		});
+
+		expect(observers.length).toBe(1);
+
+		const el2 = document.createElement('div');
+		Object.defineProperty(el2, 'clientHeight', { value: 40, configurable: true });
+
+		act(() => {
+			result.current.measureElement(el2, 0);
+		});
+
+		expect(disconnect).toHaveBeenCalled();
+		expect(observers.length).toBe(2);
+
+		vi.unstubAllGlobals();
+	});
+
+	it('measureElement with null disconnects observer', () => {
+		const disconnect = vi.fn();
+
+		vi.stubGlobal(
+			'ResizeObserver',
+			class {
+				constructor() {}
+				observe = vi.fn();
+				disconnect = disconnect;
+				unobserve = vi.fn();
+			}
+		);
+
+		const { result } = setup(5, { estimateSize: () => 40 });
+		const el = document.createElement('div');
+		Object.defineProperty(el, 'clientHeight', { value: 40, configurable: true });
+
+		act(() => {
+			result.current.measureElement(el, 0);
+		});
+
+		act(() => {
+			result.current.measureElement(null, 0);
+		});
+
+		expect(disconnect).toHaveBeenCalled();
+
+		vi.unstubAllGlobals();
 	});
 });
