@@ -2,7 +2,8 @@ import { CSSProperties, ReactNode } from 'react';
 import { useVirtualizer } from '../hooks/useVirtualizer';
 
 export type VirtualizeListProps = {
-	children: ReactNode[];
+	count: number;
+	renderItem: (index: number) => ReactNode;
 	height: CSSProperties['height'];
 	width?: CSSProperties['width'];
 	className?: string;
@@ -10,12 +11,21 @@ export type VirtualizeListProps = {
 	overscan?: number;
 };
 
-export const Virtualize = ({ children, height, className, style, overscan, width = 'auto' }: VirtualizeListProps) => {
+export const Virtualize = ({
+	count,
+	renderItem,
+	height,
+	className,
+	style,
+	overscan,
+	width = 'auto',
+}: VirtualizeListProps) => {
 	const { virtualItems, scrollHeight, scrollRef, measureElement } = useVirtualizer({
-		count: children.length,
+		count,
 		estimateSize: () => 24,
 		overscan,
 	});
+
 	return (
 		<div
 			ref={scrollRef}
@@ -35,7 +45,7 @@ export const Virtualize = ({ children, height, className, style, overscan, width
 							transform: `translateY(${item.start}px)`,
 						}}
 					>
-						{children[item.index]}
+						{renderItem(item.index)}
 					</div>
 				))}
 			</div>
