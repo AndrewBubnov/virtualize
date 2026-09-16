@@ -1,5 +1,5 @@
-import { useCallback, useReducer, useRef } from 'react';
-import { useLatest } from './useLatest.ts';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useLatest } from './useLatest';
 
 type VirtualItem = {
 	index: number;
@@ -15,15 +15,17 @@ type Options = {
 };
 
 const DEFAULT_OVERSCAN = 3;
+const FORCE_RENDER = 0.000001;
 
 export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: Options) {
-	const [, forceRender] = useReducer(x => x + 1, 0);
+	const [scrollOffset, setScrollOffset] = useState(0);
 	const scrollElementRef = useRef<HTMLElement | null>(null);
 	const rafRef = useRef<number | null>(null);
-	const scrollOffsetRef = useRef(0);
-	const observersRef = useRef<Map<number, ResizeObserver>>(new Map());
+	const observersRef = useRef<Map<number, { observer: ResizeObserver; element: HTMLElement }>>(new Map());
 	const measuredCacheRef = useRef<Map<number, number>>(new Map());
 	const estimateSizeRef = useLatest(estimateSize);
+
+	const offsets: number[] = useMemo(() => new Array(count), [count]);
 
 	const getEffectiveSize = useCallback(
 		(index: number) => measuredCacheRef.current.get(index) ?? estimateSizeRef.current(index),
@@ -37,36 +39,31 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 
 			const containerHeight = el.clientHeight;
 
-			const offsets: number[] = new Array(count);
-			let total = 0;
+			let scrollHeight = 0;
 			for (let i = 0; i < count; i++) {
-				offsets[i] = total;
-				total += getEffectiveSize(i);
+				offsets[i] = scrollHeight;
+				scrollHeight += getEffectiveSize(i);
 			}
 
 			let startIndex = 0;
-			while (startIndex < count && offsets[startIndex] < scrollOffset) {
-				startIndex++;
-			}
+			while (startIndex < count && offsets[startIndex] < scrollOffset) startIndex++;
 
 			startIndex = Math.max(startIndex - overscan, 0);
 
 			let endIndex = startIndex;
-			while (endIndex < count && offsets[endIndex] - offsets[startIndex] < containerHeight) {
-				endIndex++;
-			}
+			while (endIndex < count && offsets[endIndex] - offsets[startIndex] < containerHeight) endIndex++;
 			endIndex = Math.min(endIndex + overscan, count);
 
-			const items: VirtualItem[] = [];
+			const virtualItems: VirtualItem[] = [];
 			for (let i = startIndex; i < endIndex; i++) {
 				const size = getEffectiveSize(i);
 				const start = offsets[i];
-				items.push({ index: i, start, size, end: start + size });
+				virtualItems.push({ index: i, start, size, end: start + size });
 			}
 
-			return { items, total };
+			return { virtualItems, scrollHeight };
 		},
-		[count, overscan, getEffectiveSize]
+		[count, getEffectiveSize, offsets, overscan]
 	);
 
 	const handleScroll = useCallback(() => {
@@ -74,11 +71,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 
 		rafRef.current = requestAnimationFrame(() => {
 			const el = scrollElementRef.current;
-			if (el) {
-				scrollOffsetRef.current = el.scrollTop;
-				console.log(scrollOffsetRef.current);
-				forceRender();
-			}
+			if (el) setScrollOffset(el.scrollTop);
 		});
 	}, []);
 
@@ -88,20 +81,28 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 
 			scrollElementRef.current = element;
 
-			if (element) {
-				element.addEventListener('scroll', handleScroll, { passive: true });
-				scrollOffsetRef.current = element.scrollTop;
-			}
-			forceRender();
+			if (element) element.addEventListener('scroll', handleScroll, { passive: true });
+			setScrollOffset(element?.scrollTop || FORCE_RENDER);
 		},
 		[handleScroll]
 	);
 
 	const measureElement = useCallback((element: HTMLElement | null, index: number) => {
 		if (!element) {
-			observersRef.current.get(index)?.disconnect();
-			observersRef.current.delete(index);
+			const entry = observersRef.current.get(index);
+			if (entry) {
+				entry.observer.disconnect();
+				observersRef.current.delete(index);
+			}
 			return;
+		}
+
+		const existing = observersRef.current.get(index);
+		if (existing && existing.element === element) return;
+
+		if (existing) {
+			existing.observer.disconnect();
+			observersRef.current.delete(index);
 		}
 
 		const observer = new ResizeObserver(([entry]) => {
@@ -112,14 +113,14 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			if (prev === height) return;
 
 			measuredCacheRef.current.set(index, height);
-			forceRender();
+			setScrollOffset(prevState => prevState + FORCE_RENDER);
 		});
 
 		observer.observe(element);
-		observersRef.current.set(index, observer);
+		observersRef.current.set(index, { observer, element });
 	}, []);
 
-	const { items, total } = computeItems(scrollOffsetRef.current);
+	const { virtualItems, scrollHeight } = useMemo(() => computeItems(scrollOffset), [computeItems, scrollOffset]);
 
 	const scrollToIndex = useCallback(
 		(index: number, options?: { align?: 'start' | 'center' | 'end' }) => {
@@ -128,9 +129,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 
 			const align = options?.align ?? 'start';
 			let offset = 0;
-			for (let i = 0; i < index; i++) {
-				offset += getEffectiveSize(i);
-			}
+			for (let i = 0; i < index; i++) offset += getEffectiveSize(i);
 
 			if (align === 'center') {
 				offset -= (el.clientHeight - getEffectiveSize(index)) / 2;
@@ -143,5 +142,5 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 		[count, getEffectiveSize]
 	);
 
-	return { virtualItems: items, scrollHeight: total, scrollToIndex, scrollRef, measureElement };
+	return { virtualItems: virtualItems ?? [], scrollHeight, scrollToIndex, scrollRef, measureElement };
 }
