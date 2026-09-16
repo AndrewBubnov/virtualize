@@ -134,6 +134,8 @@ describe('useVirtualizer', () => {
 	});
 
 	it('measureElement updates scrollHeight after ResizeObserver callback', () => {
+		vi.useFakeTimers();
+
 		vi.stubGlobal(
 			'ResizeObserver',
 			class {
@@ -157,12 +159,19 @@ describe('useVirtualizer', () => {
 			result.current.measureElement(el, 0);
 		});
 
+		act(() => {
+			vi.advanceTimersByTime(1);
+		});
+
 		expect(result.current.scrollHeight).toBe(80 + 4 * 40);
 
 		vi.unstubAllGlobals();
+		vi.useRealTimers();
 	});
 
 	it('measureElement with ResizeObserver updates height', () => {
+		vi.useFakeTimers();
+
 		let resizeCallback: ResizeObserverCallback | undefined;
 		const mockObserve = vi.fn();
 		const mockDisconnect = vi.fn();
@@ -198,9 +207,14 @@ describe('useVirtualizer', () => {
 			);
 		});
 
+		act(() => {
+			vi.advanceTimersByTime(1);
+		});
+
 		expect(result.current.scrollHeight).toBe(prevHeight - 40 + 100);
 
 		vi.unstubAllGlobals();
+		vi.useRealTimers();
 	});
 
 	it('measureElement disconnects observer on null', () => {

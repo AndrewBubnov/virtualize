@@ -1,6 +1,5 @@
 import { CSSProperties, ReactNode } from 'react';
-import { AutoSizer } from 'components/AutoSizer';
-import { useVirtualize } from 'hooks/useVirtualize';
+import { useVirtualizer } from '../hooks/useVirtualizer';
 
 export type VirtualizeListProps = {
 	children: ReactNode[];
@@ -8,40 +7,36 @@ export type VirtualizeListProps = {
 	width?: CSSProperties['width'];
 	className?: string;
 	style?: CSSProperties;
-	overScan?: number;
+	overscan?: number;
 };
 
-const OVER_SCAN = 3;
-
-export const Virtualize = ({
-	children,
-	height,
-	className,
-	style,
-	overScan = OVER_SCAN,
-	width = 'auto',
-}: VirtualizeListProps) => {
-	const { rows, mountHandler, resizeHandler, scrollHeight, containerRef, scrollHandler } = useVirtualize(
-		children,
-		overScan
-	);
+export const Virtualize = ({ children, height, className, style, overscan, width = 'auto' }: VirtualizeListProps) => {
+	const { virtualItems, scrollHeight, scrollRef, measureElement } = useVirtualizer({
+		count: children.length,
+		estimateSize: () => 24,
+		overscan,
+	});
 	return (
 		<div
-			onScroll={scrollHandler}
-			ref={containerRef}
+			ref={scrollRef}
 			style={{ height, width, overflow: 'auto', lineHeight: 1.5, ...style }}
 			className={className}
 		>
 			<div style={{ position: 'relative', height: scrollHeight }}>
-				{rows.map(el => (
-					<AutoSizer
-						key={el.index}
-						offset={el.transform}
-						onMount={mountHandler(el.index)}
-						onResize={resizeHandler(el.index)}
+				{virtualItems.map(item => (
+					<div
+						key={item.index}
+						ref={el => measureElement(el, item.index)}
+						style={{
+							position: 'absolute',
+							top: 0,
+							left: 0,
+							width: '100%',
+							transform: `translateY(${item.start}px)`,
+						}}
 					>
-						{el.content}
-					</AutoSizer>
+						{children[item.index]}
+					</div>
 				))}
 			</div>
 		</div>

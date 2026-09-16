@@ -76,6 +76,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			const el = scrollElementRef.current;
 			if (el) {
 				scrollOffsetRef.current = el.scrollTop;
+				console.log(scrollOffsetRef.current);
 				forceRender();
 			}
 		});
