@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { useLatest } from './useLatest';
 import { FenwickTree } from '../fenwickTree';
 
 type VirtualItem = {
@@ -17,55 +16,64 @@ type Options = {
 
 const DEFAULT_OVERSCAN = 3;
 const FORCE_RENDER = 0.000001;
+const SAFE_MAX_HEIGHT = 15_000_000;
+
+const getScale = (logicalTotal: number): { scale: number; physicalTotal: number } => {
+	if (logicalTotal <= SAFE_MAX_HEIGHT) return { scale: 1, physicalTotal: logicalTotal };
+	return { scale: SAFE_MAX_HEIGHT / logicalTotal, physicalTotal: SAFE_MAX_HEIGHT };
+};
 
 export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: Options) {
 	const [scrollOffset, setScrollOffset] = useState(0);
 	const scrollElementRef = useRef<HTMLElement | null>(null);
 	const rafRef = useRef<number | null>(null);
 	const observersRef = useRef<Map<number, { observer: ResizeObserver; element: HTMLElement }>>(new Map());
-	const measuredCacheRef = useRef<Map<number, number>>(new Map());
 	const prevCountRef = useRef(count);
-
-	const estimateSizeRef = useLatest(estimateSize);
-
-	const getEffectiveSize = useCallback(
-		(index: number) => measuredCacheRef.current.get(index) ?? estimateSizeRef.current(index),
-		[estimateSizeRef]
-	);
 
 	const fenwickRef = useRef<FenwickTree | null>(null);
 	if (fenwickRef.current === null || !fenwickRef.current.total()) {
 		const sizes = new Float64Array(count);
-		for (let i = 0; i < count; i++) sizes[i] = estimateSizeRef.current(i);
+		for (let i = 0; i < count; i++) sizes[i] = estimateSize(i);
 		fenwickRef.current = new FenwickTree(sizes);
 	}
 
 	if (prevCountRef.current !== count) {
 		const sizes = new Float64Array(count);
-		for (let i = 0; i < count; i++) sizes[i] = estimateSizeRef.current(i);
+		for (let i = 0; i < count; i++) sizes[i] = estimateSize(i);
 		fenwickRef.current = new FenwickTree(sizes);
 		prevCountRef.current = count;
 	}
 
 	const computeItems = useCallback(
-		(scrollOffset: number) => {
+		(physicalScrollOffset: number) => {
 			const el = scrollElementRef.current;
 			const tree = fenwickRef.current;
 			if (!el || count === 0 || !tree) return { virtualItems: [], scrollHeight: 0 };
+
 			const containerHeight = el.clientHeight;
-			const viewportStart = tree.findByPrefixSum(scrollOffset);
-			const viewportEnd = tree.findByPrefixSum(scrollOffset + containerHeight);
+			const logicalTotal = tree.total();
+			const { scale, physicalTotal } = getScale(logicalTotal);
+
+			const logicalScrollOffset = physicalScrollOffset / scale;
+
+			const viewportStart = tree.findByPrefixSum(logicalScrollOffset);
+			const viewportEnd = tree.findByPrefixSum(logicalScrollOffset + containerHeight / scale);
+
 			const startIndex = Math.max(viewportStart - overscan, 0);
 			const endIndex = Math.min(viewportEnd + overscan + 1, count);
-			const startOffset = tree.prefixSum(startIndex);
+
+			const startOffsetLogical = tree.prefixSum(startIndex);
+			const startOffsetPhysical = physicalScrollOffset + (startOffsetLogical - logicalScrollOffset) * scale;
+
 			const virtualItems: VirtualItem[] = [];
-			let offset = startOffset;
+			let offset = startOffsetPhysical;
 			for (let i = startIndex; i < endIndex; i++) {
 				const size = tree.prefixSum(i + 1) - tree.prefixSum(i);
 				virtualItems.push({ index: i, start: offset, size, end: offset + size });
 				offset += size;
 			}
-			return { virtualItems, scrollHeight: tree.total() };
+
+			return { virtualItems, scrollHeight: physicalTotal };
 		},
 		[count, overscan]
 	);
@@ -94,7 +102,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			const prevSize = fenwickRef.current.prefixSum(index + 1) - fenwickRef.current.prefixSum(index);
 			if (prevSize === height) return;
 
-			fenwickRef.current.update(index, height - prevSize); // O(log n), не весь пересчёт
+			fenwickRef.current.update(index, height - prevSize);
 			setScrollOffset(prevState => prevState + FORCE_RENDER);
 		});
 
@@ -128,21 +136,26 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 	const scrollToIndex = useCallback(
 		(index: number, options?: { align?: 'start' | 'center' | 'end' }) => {
 			const el = scrollElementRef.current;
-			if (!el || index < 0 || index >= count) return;
+			const tree = fenwickRef.current;
+			if (!el || !tree || index < 0 || index >= count) return;
 
+			const { scale } = getScale(tree.total());
 			const align = options?.align ?? 'start';
-			let offset = 0;
-			for (let i = 0; i < index; i++) offset += getEffectiveSize(i);
+
+			const logicalOffset = tree.prefixSum(index);
+			const size = tree.prefixSum(index + 1) - logicalOffset;
+
+			let physicalOffset = logicalOffset * scale;
 
 			if (align === 'center') {
-				offset -= (el.clientHeight - getEffectiveSize(index)) / 2;
+				physicalOffset -= (el.clientHeight - size) / 2;
 			} else if (align === 'end') {
-				offset -= el.clientHeight - getEffectiveSize(index);
+				physicalOffset -= el.clientHeight - size;
 			}
 
-			el.scrollTop = Math.max(0, offset);
+			el.scrollTop = Math.max(0, physicalOffset);
 		},
-		[count, getEffectiveSize]
+		[count]
 	);
 
 	return { virtualItems: virtualItems ?? [], scrollHeight, scrollToIndex, scrollRef, measureElement };

@@ -5,10 +5,10 @@ export type VirtualizeListProps = {
 	count: number;
 	renderItem: (index: number) => ReactNode;
 	height: CSSProperties['height'];
-	width?: CSSProperties['width'];
 	className?: string;
-	style?: CSSProperties;
 	overscan?: number;
+	width?: CSSProperties['width'];
+	style?: CSSProperties;
 };
 
 export const Virtualize = ({
