@@ -8,13 +8,14 @@ type VirtualItem = {
 	end: number;
 };
 
-type Options = {
+type UseVirtualizer = {
 	count: number;
-	estimateSize: (index: number) => number;
+	estimateSize?: (index: number) => number;
 	overscan?: number;
 };
 
 const DEFAULT_OVERSCAN = 3;
+const DEFAULT_SIZE = 24;
 const FORCE_RENDER = 0.000001;
 const SAFE_MAX_HEIGHT = 15_000_000;
 
@@ -23,7 +24,13 @@ const getScale = (logicalTotal: number) => {
 	return { scale: SAFE_MAX_HEIGHT / logicalTotal, physicalTotal: SAFE_MAX_HEIGHT };
 };
 
-export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: Options) {
+const getFenwickTree = (count: number, estimateSize?: (index: number) => number) => {
+	const sizes = new Float64Array(count);
+	for (let i = 0; i < count; i++) sizes[i] = estimateSize?.(i) || DEFAULT_SIZE;
+	return new FenwickTree(sizes);
+};
+
+export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: UseVirtualizer) {
 	const [scrollOffset, setScrollOffset] = useState(0);
 	const scrollElementRef = useRef<HTMLElement | null>(null);
 	const rafRef = useRef<number | null>(null);
@@ -31,16 +38,12 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 	const prevCountRef = useRef(count);
 
 	const fenwickRef = useRef<FenwickTree | null>(null);
-	if (fenwickRef.current === null || !fenwickRef.current.total()) {
-		const sizes = new Float64Array(count);
-		for (let i = 0; i < count; i++) sizes[i] = estimateSize(i);
-		fenwickRef.current = new FenwickTree(sizes);
-	}
+
+	if (fenwickRef.current === null || !fenwickRef.current.total())
+		fenwickRef.current = getFenwickTree(count, estimateSize);
 
 	if (prevCountRef.current !== count) {
-		const sizes = new Float64Array(count);
-		for (let i = 0; i < count; i++) sizes[i] = estimateSize(i);
-		fenwickRef.current = new FenwickTree(sizes);
+		fenwickRef.current = getFenwickTree(count, estimateSize);
 		prevCountRef.current = count;
 	}
 
@@ -53,12 +56,9 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			const containerHeight = el.clientHeight;
 			const logicalTotal = tree.total();
 			const { scale, physicalTotal } = getScale(logicalTotal);
-
 			const logicalScrollOffset = physicalScrollOffset / scale;
-
 			const viewportStart = tree.findByPrefixSum(logicalScrollOffset);
 			const viewportEnd = tree.findByPrefixSum(logicalScrollOffset + containerHeight / scale);
-
 			const startIndex = Math.max(viewportStart - overscan, 0);
 			const endIndex = Math.min(viewportEnd + overscan + 1, count);
 

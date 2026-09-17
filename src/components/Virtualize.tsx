@@ -5,6 +5,7 @@ export type VirtualizeListProps = {
 	count: number;
 	renderItem: (index: number) => ReactNode;
 	height: CSSProperties['height'];
+	estimateSize?: (index: number) => number;
 	className?: string;
 	overscan?: number;
 	width?: CSSProperties['width'];
@@ -18,11 +19,12 @@ export const Virtualize = ({
 	className,
 	style,
 	overscan,
+	estimateSize,
 	width = 'auto',
 }: VirtualizeListProps) => {
 	const { virtualItems, scrollHeight, scrollRef, measureElement } = useVirtualizer({
 		count,
-		estimateSize: () => 24,
+		estimateSize,
 		overscan,
 	});
 
