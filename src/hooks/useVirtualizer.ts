@@ -18,7 +18,7 @@ const DEFAULT_OVERSCAN = 3;
 const FORCE_RENDER = 0.000001;
 const SAFE_MAX_HEIGHT = 15_000_000;
 
-const getScale = (logicalTotal: number): { scale: number; physicalTotal: number } => {
+const getScale = (logicalTotal: number) => {
 	if (logicalTotal <= SAFE_MAX_HEIGHT) return { scale: 1, physicalTotal: logicalTotal };
 	return { scale: SAFE_MAX_HEIGHT / logicalTotal, physicalTotal: SAFE_MAX_HEIGHT };
 };
