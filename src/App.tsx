@@ -1,8 +1,8 @@
 import { loremIpsum } from 'lorem-ipsum';
-import { Virtualize } from './components/Virtualize';
+import { VirtualizedList } from './components/VirtualizedList.tsx';
 
 const items = Array.from(
-	{ length: 3000_000 },
+	{ length: 1_000_000 },
 	(_, i) =>
 		`${i}. ${loremIpsum({
 			format: 'plain',
@@ -13,6 +13,10 @@ const items = Array.from(
 		})}`
 );
 
-const App = () => <Virtualize count={items.length} height={500} renderItem={i => items[i]} />;
+const App = () => (
+	<VirtualizedList count={items.length} height={500} renderItem={i => items[i]}>
+		{onClick => <button onClick={() => onClick(34567)}>To index</button>}
+	</VirtualizedList>
+);
 
 export default App;

@@ -31,9 +31,10 @@ export class FenwickTree {
 	findByPrefixSum(target: number): number {
 		let pos = 0;
 		let remaining = target;
+		const EPS = 1e-6;
 		for (let pw = 1 << this.logn; pw > 0; pw >>= 1) {
 			const next = pos + pw;
-			if (next <= this.n && this.tree[next] <= remaining) {
+			if (next <= this.n && this.tree[next] <= remaining + EPS) {
 				pos = next;
 				remaining -= this.tree[next];
 			}
