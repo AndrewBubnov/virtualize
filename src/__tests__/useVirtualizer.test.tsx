@@ -128,12 +128,12 @@ describe('useVirtualizer', () => {
 		expect(result.current.virtualItems).toEqual([]);
 	});
 
-	it('exposes measureElement in return value', () => {
+	it('exposes getMeasureRef in return value', () => {
 		const { result } = setup(10);
-		expect(typeof result.current.measureElement).toBe('function');
+		expect(typeof result.current.getMeasureRef).toBe('function');
 	});
 
-	it('measureElement updates scrollHeight after ResizeObserver callback', () => {
+	it('getMeasureRef updates scrollHeight after ResizeObserver callback', () => {
 		vi.useFakeTimers();
 
 		vi.stubGlobal(
@@ -156,7 +156,7 @@ describe('useVirtualizer', () => {
 		Object.defineProperty(el, 'clientHeight', { value: 80, configurable: true });
 
 		act(() => {
-			result.current.measureElement(el, 0);
+			result.current.getMeasureRef(0)(el);
 		});
 
 		act(() => {
@@ -169,7 +169,7 @@ describe('useVirtualizer', () => {
 		vi.useRealTimers();
 	});
 
-	it('measureElement with ResizeObserver updates height', () => {
+	it('getMeasureRef with ResizeObserver updates height', () => {
 		vi.useFakeTimers();
 
 		let resizeCallback: ResizeObserverCallback | undefined;
@@ -193,7 +193,7 @@ describe('useVirtualizer', () => {
 		Object.defineProperty(el, 'clientHeight', { value: 40, configurable: true });
 
 		act(() => {
-			result.current.measureElement(el, 2);
+			result.current.getMeasureRef(2)(el);
 		});
 
 		expect(mockObserve).toHaveBeenCalledWith(el);
@@ -217,7 +217,7 @@ describe('useVirtualizer', () => {
 		vi.useRealTimers();
 	});
 
-	it('measureElement disconnects observer on null', () => {
+	it('getMeasureRef disconnects observer on null', () => {
 		const disconnect = vi.fn();
 		const observers: ResizeObserver[] = [];
 
@@ -238,13 +238,13 @@ describe('useVirtualizer', () => {
 		Object.defineProperty(el, 'clientHeight', { value: 40, configurable: true });
 
 		act(() => {
-			result.current.measureElement(el, 0);
+			result.current.getMeasureRef(0)(el);
 		});
 
 		expect(observers.length).toBe(1);
 
 		act(() => {
-			result.current.measureElement(null, 0);
+			result.current.getMeasureRef(0)(null);
 		});
 
 		expect(disconnect).toHaveBeenCalled();

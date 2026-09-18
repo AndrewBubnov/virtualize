@@ -22,7 +22,7 @@ export const Virtualize = ({
 	estimateSize,
 	width = 'auto',
 }: VirtualizeListProps) => {
-	const { virtualItems, scrollHeight, scrollRef, measureElement } = useVirtualizer({
+	const { virtualItems, scrollHeight, scrollRef, getMeasureRef } = useVirtualizer({
 		count,
 		estimateSize,
 		overscan,
@@ -38,7 +38,7 @@ export const Virtualize = ({
 				{virtualItems.map(item => (
 					<div
 						key={item.index}
-						ref={el => measureElement(el, item.index)}
+						ref={getMeasureRef(item.index)}
 						style={{
 							position: 'absolute',
 							top: 0,

@@ -16,7 +16,6 @@ type UseVirtualizer = {
 
 const DEFAULT_OVERSCAN = 3;
 const DEFAULT_SIZE = 24;
-const FORCE_RENDER = 0.000001;
 const SAFE_MAX_HEIGHT = 15_000_000;
 
 const getScale = (logicalTotal: number) => {
@@ -31,13 +30,13 @@ const getFenwickTree = (count: number, estimateSize?: (index: number) => number)
 };
 
 export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: UseVirtualizer) {
-	const [scrollOffset, setScrollOffset] = useState(0);
+	const [scrollOffset, setScrollOffset] = useState<{ value: number }>({ value: 0 });
 	const scrollElementRef = useRef<HTMLElement | null>(null);
 	const rafRef = useRef<number | null>(null);
 	const observersRef = useRef<Map<number, { observer: ResizeObserver; element: HTMLElement }>>(new Map());
 	const prevCountRef = useRef(count);
-
 	const fenwickRef = useRef<FenwickTree | null>(null);
+	const refCacheRef = useRef<Map<number, (el: HTMLElement | null) => void>>(new Map());
 
 	if (fenwickRef.current === null || !fenwickRef.current.total())
 		fenwickRef.current = getFenwickTree(count, estimateSize);
@@ -68,7 +67,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			const virtualItems: VirtualItem[] = [];
 			let offset = startOffsetPhysical;
 			for (let i = startIndex; i < endIndex; i++) {
-				const size = tree.prefixSum(i + 1) - tree.prefixSum(i);
+				const size = (tree.prefixSum(i + 1) - tree.prefixSum(i)) * scale;
 				virtualItems.push({ index: i, start: offset, size, end: offset + size });
 				offset += size;
 			}
@@ -99,23 +98,42 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			const height = entry?.borderBoxSize[0]?.blockSize;
 			if (height == null || !fenwickRef.current) return;
 
-			const prevSize = fenwickRef.current.prefixSum(index + 1) - fenwickRef.current.prefixSum(index);
-			if (prevSize === height) return;
+			const tree = fenwickRef.current;
+			const { scale } = getScale(tree.total());
+			const logicalHeight = height / scale;
 
-			fenwickRef.current.update(index, height - prevSize);
-			setScrollOffset(prevState => prevState + FORCE_RENDER);
+			const prevSize = tree.prefixSum(index + 1) - tree.prefixSum(index);
+			if (Math.abs(prevSize - logicalHeight) < 0.5) return;
+
+			tree.update(index, logicalHeight - prevSize);
+			setScrollOffset(prevState => ({ ...prevState }));
 		});
 
 		observer.observe(element);
 		observersRef.current.set(index, { observer, element });
 	}, []);
 
+	const getMeasureRef = useCallback(
+		(index: number) => {
+			let fn = refCacheRef.current.get(index);
+			if (!fn) {
+				fn = (el: HTMLElement | null) => {
+					measureElement(el, index);
+					if (el === null) refCacheRef.current.delete(index);
+				};
+				refCacheRef.current.set(index, fn);
+			}
+			return fn;
+		},
+		[measureElement]
+	);
+
 	const handleScroll = useCallback(() => {
 		if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
 
 		rafRef.current = requestAnimationFrame(() => {
 			const el = scrollElementRef.current;
-			if (el) setScrollOffset(el.scrollTop);
+			if (el) setScrollOffset({ value: el.scrollTop });
 		});
 	}, []);
 
@@ -126,12 +144,15 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			scrollElementRef.current = element;
 
 			if (element) element.addEventListener('scroll', handleScroll, { passive: true });
-			setScrollOffset(element?.scrollTop || FORCE_RENDER);
+			setScrollOffset(element ? { value: element?.scrollTop } : { value: 0 });
 		},
 		[handleScroll]
 	);
 
-	const { virtualItems, scrollHeight } = useMemo(() => computeItems(scrollOffset), [computeItems, scrollOffset]);
+	const { virtualItems, scrollHeight } = useMemo(
+		() => computeItems(scrollOffset.value),
+		[computeItems, scrollOffset]
+	);
 
 	const scrollToIndex = useCallback(
 		(index: number, options?: { align?: 'start' | 'center' | 'end' }) => {
@@ -158,5 +179,5 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 		[count]
 	);
 
-	return { virtualItems: virtualItems ?? [], scrollHeight, scrollToIndex, scrollRef, measureElement };
+	return { virtualItems: virtualItems ?? [], scrollHeight, scrollToIndex, scrollRef, getMeasureRef };
 }
