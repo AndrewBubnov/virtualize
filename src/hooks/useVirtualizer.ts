@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { FenwickTree } from '../fenwickTree';
 import { useLatest } from './useLatest';
 import { classifySettleScroll, computeTargetScrollTop, getFenwickTree, getScale, getViewportRange } from '../utils';
-import { DEFAULT_OVERSCAN, MAX_SETTLE_REJUMPS, SCROLL_CONVERGED_THRESHOLD, SETTLE_MAX_FRAMES } from '../constants';
+import { DEFAULT_OVERSCAN, SCROLL_CONVERGED_THRESHOLD, SETTLE_MAX_FRAMES, SETTLE_QUIET_FRAMES, SETTLE_WINDOW } from '../constants';
 
 type VirtualItem = {
 	index: number;
@@ -20,9 +20,6 @@ type UseVirtualizer = {
 type PendingTarget = {
 	index: number;
 	align: 'start' | 'center' | 'end';
-	generation: number;
-	attempt: number;
-	rangeReleased: boolean;
 };
 
 export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: UseVirtualizer) {
@@ -37,9 +34,9 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 	const countRef = useLatest(count);
 	const overscanRef = useLatest(overscan);
 	const pendingTargetRef = useRef<PendingTarget | null>(null);
-	const generationRef = useRef(0);
-	const jumpRafRef = useRef<number | null>(null);
+	const tickRafRef = useRef<number | null>(null);
 	const settleFramesRef = useRef(0);
+	const quietFramesRef = useRef(0);
 	const treeVersionRef = useRef(0);
 	const versionAtJumpRef = useRef(0);
 
@@ -172,100 +169,84 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 	);
 
 	const releaseSettle = useCallback((scrollTop: number) => {
-		if (jumpRafRef.current !== null) {
-			cancelAnimationFrame(jumpRafRef.current);
-			jumpRafRef.current = null;
+		if (tickRafRef.current !== null) {
+			cancelAnimationFrame(tickRafRef.current);
+			tickRafRef.current = null;
 		}
 		pendingTargetRef.current = null;
 		setForcedRange(null);
 		setScrollOffset({ value: scrollTop });
 	}, []);
 
-	const scheduleCheck = useCallback(
-		(generation: number) => {
-			if (jumpRafRef.current !== null) return;
-			jumpRafRef.current = requestAnimationFrame(() => {
-				jumpRafRef.current = requestAnimationFrame(() => {
-					const el = scrollElementRef.current;
-					const tree = fenwickRef.current;
-					const pending = pendingTargetRef.current;
-					if (!el || !tree || !pending || pending.generation !== generation) return;
+	const scheduleTick = useCallback(() => {
+		if (tickRafRef.current !== null) return;
+		tickRafRef.current = requestAnimationFrame(() => {
+			tickRafRef.current = null;
+			const el = scrollElementRef.current;
+			const tree = fenwickRef.current;
+			const pending = pendingTargetRef.current;
+			if (!el || !tree || !pending) return;
 
-					const countValue = countRef.current;
-					const overscanValue = overscanRef.current;
-					settleFramesRef.current += 1;
-					if (settleFramesRef.current > SETTLE_MAX_FRAMES) {
-						releaseSettle(el.scrollTop);
-						return;
-					}
+			const countValue = countRef.current;
+			const overscanValue = overscanRef.current;
+			settleFramesRef.current += 1;
+			if (settleFramesRef.current > SETTLE_MAX_FRAMES) {
+				releaseSettle(el.scrollTop);
+				return;
+			}
 
-					const { scale } = getScale(tree.total());
-					const { targetScrollTop } = computeTargetScrollTop(
-						tree,
-						pending.index,
-						pending.align,
-						el.clientHeight,
-						scale,
-						countValue
-					);
-
-					if (
-						classifySettleScroll(
-							el.scrollTop,
-							targetScrollTop,
-							treeVersionRef.current,
-							versionAtJumpRef.current
-						) !== 'converged'
-					) {
-						if (treeVersionRef.current === versionAtJumpRef.current) {
-							releaseSettle(el.scrollTop);
-							return;
-						}
-						versionAtJumpRef.current = treeVersionRef.current;
-						setScrollOffset(prevState => ({ ...prevState }));
-						scheduleCheck(generation);
-						return;
-					}
-
-					if (!pending.rangeReleased) {
-						pending.rangeReleased = true;
-						setForcedRange(null);
-						setScrollOffset({ value: el.scrollTop });
-						scheduleCheck(generation);
-						return;
-					}
-
-					const { startIndex, endIndex } = getViewportRange(
-						tree,
-						el.scrollTop / scale,
-						el.clientHeight,
-						scale,
-						overscanValue,
-						countValue
-					);
-					const targetIndex = Math.max(0, Math.min(pending.index, countValue - 1));
-					if (targetIndex >= startIndex && targetIndex <= endIndex) {
-						releaseSettle(el.scrollTop);
-						return;
-					}
-					if (pending.attempt < MAX_SETTLE_REJUMPS) {
-						pending.attempt += 1;
-						pending.rangeReleased = false;
-						versionAtJumpRef.current = treeVersionRef.current;
-						setForcedRange({
-							start: Math.max(pending.index - overscanValue, 0),
-							end: Math.min(pending.index + overscanValue + 1, countValue),
-						});
-						setScrollOffset(prevState => ({ ...prevState }));
-						scheduleCheck(generation);
-						return;
-					}
-					releaseSettle(el.scrollTop);
-				});
-			});
-		},
-		[releaseSettle, countRef, overscanRef]
-	);
+			const { scale } = getScale(tree.total());
+			const { targetScrollTop } = computeTargetScrollTop(
+				tree,
+				pending.index,
+				pending.align,
+				el.clientHeight,
+				scale,
+				countValue
+			);
+			const kind = classifySettleScroll(
+				el.scrollTop,
+				targetScrollTop,
+				treeVersionRef.current,
+				versionAtJumpRef.current
+			);
+			if (kind === 'user') {
+				releaseSettle(el.scrollTop);
+				return;
+			}
+			if (kind === 'stale-tree') {
+				versionAtJumpRef.current = treeVersionRef.current;
+				quietFramesRef.current = 0;
+				setScrollOffset(prevState => ({ ...prevState }));
+				scheduleTick();
+				return;
+			}
+			if (treeVersionRef.current !== versionAtJumpRef.current) {
+				versionAtJumpRef.current = treeVersionRef.current;
+				quietFramesRef.current = 0;
+			} else {
+				quietFramesRef.current += 1;
+			}
+			if (quietFramesRef.current < SETTLE_QUIET_FRAMES) {
+				scheduleTick();
+				return;
+			}
+			const { startIndex, endIndex } = getViewportRange(
+				tree,
+				el.scrollTop / scale,
+				el.clientHeight,
+				scale,
+				overscanValue,
+				countValue
+			);
+			const targetIndex = Math.max(0, Math.min(pending.index, countValue - 1));
+			if (targetIndex < startIndex || targetIndex > endIndex) {
+				releaseSettle(el.scrollTop);
+				return;
+			}
+			releaseSettle(el.scrollTop);
+		});
+	}, [releaseSettle, countRef, overscanRef]);
 
 	const handleScroll = useCallback(() => {
 		if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
@@ -325,27 +306,21 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 				cancelAnimationFrame(rafRef.current);
 				rafRef.current = null;
 			}
-			if (jumpRafRef.current !== null) {
-				cancelAnimationFrame(jumpRafRef.current);
-				jumpRafRef.current = null;
+			if (tickRafRef.current !== null) {
+				cancelAnimationFrame(tickRafRef.current);
+				tickRafRef.current = null;
 			}
-			generationRef.current += 1;
 			settleFramesRef.current = 0;
-			pendingTargetRef.current = {
-				index,
-				align,
-				generation: generationRef.current,
-				attempt: 0,
-				rangeReleased: false,
-			};
+			quietFramesRef.current = 0;
+			pendingTargetRef.current = { index, align };
 			versionAtJumpRef.current = treeVersionRef.current;
-			const rangeStart = Math.max(index - overscan, 0);
-			const rangeEnd = Math.min(index + overscan + 1, count);
+			const rangeStart = Math.max(index - SETTLE_WINDOW, 0);
+			const rangeEnd = Math.min(index + SETTLE_WINDOW + 1, count);
 			setForcedRange({ start: rangeStart, end: rangeEnd });
 			setScrollOffset(prevState => ({ ...prevState }));
-			scheduleCheck(generationRef.current);
+			scheduleTick();
 		},
-		[count, overscan, scheduleCheck]
+		[count, scheduleTick]
 	);
 
 	const scrollToIndex = useCallback(
