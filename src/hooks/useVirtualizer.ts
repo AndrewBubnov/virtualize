@@ -2,7 +2,13 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { FenwickTree } from '../fenwickTree';
 import { useLatest } from './useLatest';
 import { classifySettleScroll, computeTargetScrollTop, getFenwickTree, getScale, getViewportRange } from '../utils';
-import { DEFAULT_OVERSCAN, SCROLL_CONVERGED_THRESHOLD, SETTLE_MAX_FRAMES, SETTLE_QUIET_FRAMES, SETTLE_WINDOW } from '../constants';
+import {
+	DEFAULT_OVERSCAN,
+	SCROLL_CONVERGED_THRESHOLD,
+	SETTLE_MAX_FRAMES,
+	SETTLE_QUIET_FRAMES,
+	SETTLE_WINDOW,
+} from '../constants';
 
 type VirtualItem = {
 	index: number;
@@ -28,6 +34,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 	const scrollElementRef = useRef<HTMLElement | null>(null);
 	const rafRef = useRef<number | null>(null);
 	const observersRef = useRef<Map<number, { observer: ResizeObserver; element: HTMLElement }>>(new Map());
+	const containerObserverRef = useRef<ResizeObserver | null>(null);
 	const prevCountRef = useRef(count);
 	const fenwickRef = useRef<FenwickTree | null>(null);
 	const refCacheRef = useRef<Map<number, (el: HTMLElement | null) => void>>(new Map());
@@ -286,10 +293,21 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 	const scrollRef = useCallback(
 		(element: HTMLElement | null) => {
 			if (scrollElementRef.current) scrollElementRef.current.removeEventListener('scroll', handleScroll);
+			containerObserverRef.current?.disconnect();
+			containerObserverRef.current = null;
 
 			scrollElementRef.current = element;
 
-			if (element) element.addEventListener('scroll', handleScroll, { passive: true });
+			if (element) {
+				element.addEventListener('scroll', handleScroll, { passive: true });
+				if (typeof ResizeObserver !== 'undefined') {
+					const observer = new ResizeObserver(() => {
+						setScrollOffset(prevState => ({ ...prevState }));
+					});
+					observer.observe(element);
+					containerObserverRef.current = observer;
+				}
+			}
 			setScrollOffset(element ? { value: element?.scrollTop } : { value: 0 });
 		},
 		[handleScroll]

@@ -241,7 +241,7 @@ describe('useVirtualizer', () => {
 			result.current.getMeasureRef(0)(el);
 		});
 
-		expect(observers.length).toBe(1);
+		expect(observers.length).toBe(2); // Container observer from scrollRef + item observer.
 
 		act(() => {
 			result.current.getMeasureRef(0)(null);
@@ -321,5 +321,40 @@ describe('useVirtualizer', () => {
 		expect(el.scrollTop).toBe(0);
 		expect(result.current.virtualItems[0].index).toBe(0);
 		expect(result.current.virtualItems.map(v => v.index)).not.toContain(50);
+	});
+
+	it('recalculates viewport when container resizes', () => {
+		const callbacks: ResizeObserverCallback[] = [];
+		vi.stubGlobal(
+			'ResizeObserver',
+			class {
+				constructor(cb: ResizeObserverCallback) {
+					callbacks.push(cb);
+				}
+				observe = vi.fn();
+				disconnect = vi.fn();
+				unobserve = vi.fn();
+			}
+		);
+
+		// 200px viewport, 40px rows, no overscan: items 0..5.
+		const { result, el } = setup(COUNT, { clientHeight: 200, overscan: 0 });
+		expect(result.current.virtualItems.map(v => v.index)).toEqual([0, 1, 2, 3, 4, 5]);
+
+		// Grow the container to 400px without scrolling: the last observer
+		// created is the container one (item observers are only created on demand).
+		Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+		act(() => {
+			callbacks[callbacks.length - 1](
+				[{ borderBoxSize: [{ blockSize: 400 }] } as unknown as ResizeObserverEntry],
+				{} as ResizeObserver
+			);
+		});
+
+		const items = result.current.virtualItems;
+		expect(items.map(v => v.index)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+		expect(items[items.length - 1].end).toBeGreaterThanOrEqual(400);
+
+		vi.unstubAllGlobals();
 	});
 });
