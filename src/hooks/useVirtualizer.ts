@@ -10,25 +10,27 @@ import {
 	SETTLE_WINDOW,
 } from '../constants';
 
-type VirtualItem = {
+export type VirtualItem = {
 	index: number;
 	start: number;
 	size: number;
 	end: number;
 };
 
-type UseVirtualizer = {
+export type Options = {
 	count: number;
 	estimateSize?: (index: number) => number;
 	overscan?: number;
 };
 
+export type ScrollAlign = 'start' | 'center' | 'end';
+
 type PendingTarget = {
 	index: number;
-	align: 'start' | 'center' | 'end';
+	align: ScrollAlign;
 };
 
-export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: UseVirtualizer) {
+export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: Options) {
 	const [scrollOffset, setScrollOffset] = useState<{ value: number }>({ value: 0 });
 	const [forcedRange, setForcedRange] = useState<{ start: number; end: number } | null>(null);
 	const scrollElementRef = useRef<HTMLElement | null>(null);
@@ -319,7 +321,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 	);
 
 	const jumpToIndex = useCallback(
-		(index: number, align: 'start' | 'center' | 'end') => {
+		(index: number, align: ScrollAlign) => {
 			if (rafRef.current !== null) {
 				cancelAnimationFrame(rafRef.current);
 				rafRef.current = null;
@@ -342,7 +344,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 	);
 
 	const scrollToIndex = useCallback(
-		(index: number, options?: { align?: 'start' | 'center' | 'end' }) => {
+		(index: number, options?: { align?: ScrollAlign }) => {
 			if (index < 0 || index >= count) return;
 			jumpToIndex(index, options?.align ?? 'start');
 		},

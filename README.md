@@ -1,369 +1,243 @@
-# Clear virtualize
+# clear-virtualizer
 
-A React virtualization utility for rendering large lists with **dynamic, resizable item heights**, built around automatic DOM measurement and an internal layout cache.
+One hook for vertical virtualized lists and tables with dynamic row heights. Rows are measured automatically via `ResizeObserver` — no manual measuring, no fixed heights. Works for an unlimited number of rows.
 
-Unlike traditional virtualized list libraries that rely on explicit item measurement APIs or fixed-size assumptions, this implementation works directly with ReactNode[] and continuously refines layout based on real DOM feedback.
+## Install
 
-## ⚙️ API
+```sh
+npm i clear-virtualizer
+```
 
-### `useVirtualizer` (hook)
+## Exports
 
-A hook-based virtualizer for full control over rendering. Works with any data source — tables (react-table), plain lists, or custom components.
+```ts
+import { useVirtualizer, type Options, type ScrollAlign, type VirtualItem } from 'clear-virtualizer';
+```
 
-```tsx
-import { useVirtualizer } from 'clear-virtualize';
+## API
 
-const { virtualItems, scrollHeight, scrollRef, measureElement, scrollToIndex } = useVirtualizer({
+```ts
+const { virtualItems, scrollHeight, scrollRef, getMeasureRef, scrollToIndex } = useVirtualizer({
   count: 100000,
-  estimateSize: () => 44, // approximate average row height in px
+  estimateSize: () => 44,
   overscan: 10,
 });
 ```
 
-`estimateSize` returns a **rough average height** used for initial scroll calculations. It is **not** a fixed height — once rows mount, `measureElement` measures their real DOM size via ResizeObserver and overrides the estimate. Pass a value close to your expected average row height.
+| Option         | Type                                       | Description                                              |
+| -------------- |--------------------------------------------| -------------------------------------------------------- |
+| `count`        | `number`                                   | Total number of rows                                     |
+| `estimateSize` | `((index: number) => number) \| undefined` | Approximate row height in px, used until a row is measured |
+| `overscan`     | `number \| undefined`                      | Extra rows rendered above/below the viewport (default: 3) |
 
-| Option        | Type                          | Description                                                                    |
-| ------------- | ----------------------------- | ------------------------------------------------------------------------------ |
-| `count`       | `number`                      | Total number of items                                                          |
-| `estimateSize`| `(index: number) => number`   | Approximate average row height in px (overridden by real measurements at runtime) |
-| `overscan`    | `number`                      | Extra items rendered above/below viewport (default: 3)                         |
+| Return value    | Type                                          | Description                                             |
+| --------------- | --------------------------------------------- | ------------------------------------------------------- |
+| `virtualItems`  | `VirtualItem[]`                               | Rows to render: `{ index, start, size, end }` (px)      |
+| `scrollHeight`  | `number`                                      | Total scrollable height (px)                            |
+| `scrollRef`     | `(el: HTMLElement \| null) => void`           | Callback ref — attach to the scroll container           |
+| `getMeasureRef` | `(index: number) => (el: HTMLElement \| null) => void` | Attach the returned ref to each row for measuring |
+| `scrollToIndex` | `(index: number, options?: { align?: ScrollAlign }) => void` | Scroll to a row |
 
-| Return value    | Type | Description |
-| --------------- | ---- | ----------- |
-| `virtualItems`  | `VirtualItem[]` | Items to render: `{ index, start, size, end }` |
-| `scrollHeight`  | `number` | Total scrollable height (px) |
-| `scrollRef`     | `(el: HTMLElement \| null) => void` | Callback ref — attach to scroll container |
-| `measureElement`| `(el: HTMLElement \| null, index: number) => void` | Attach to each row for dynamic height measurement |
-| `scrollToIndex` | `(index, options?) => void` | Scroll to item (`align: 'start' \| 'center' \| 'end'`) |
+Do not set a fixed `height` on rows — let them size naturally so `getMeasureRef` measures the real height. Position rows with `transform: translateY(...)`.
 
-#### Table with react-table
+## List example
 
 ```tsx
-import { useReactTable, getCoreRowModel, flexRender } from '@tanstack/react-table';
-import { useVirtualizer } from 'clear-virtualize';
+import { CSSProperties, ReactNode } from 'react';
+import { useVirtualizer } from 'clear-virtualizer';
 
-const Table = ({ data, columns }) => {
-  const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() });
-  const rows = table.getRowModel().rows;
+export type VirtualizeListProps = {
+	count: number;
+	renderItem: (index: number) => ReactNode;
+	height: CSSProperties['height'];
+	estimateSize?: (index: number) => number;
+	className?: string;
+	overscan?: number;
+	width?: CSSProperties['width'];
+	style?: CSSProperties;
+};
 
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    estimateSize: () => 44, // approximate average row height
-    overscan: 10,
-  });
+export const VirtualizedList = ({
+	count,
+	renderItem,
+	height,
+	className,
+	style,
+	overscan,
+	estimateSize,
+	width = 'auto',
+}: VirtualizeListProps) => {
+	const { virtualItems, scrollHeight, scrollRef, getMeasureRef } = useVirtualizer({
+		count,
+		estimateSize,
+		overscan,
+	});
 
-  return (
-    <div ref={rowVirtualizer.scrollRef} style={{ height: 500, overflow: 'auto' }}>
-      <div style={{ position: 'relative', height: rowVirtualizer.scrollHeight }}>
-        {rowVirtualizer.virtualItems.map(virtualRow => {
-          const row = rows[virtualRow.index];
-          return (
-            <div
-              key={row.id}
-              ref={el => rowVirtualizer.measureElement(el, virtualRow.index)}
-              style={{
-                position: 'absolute',
-                top: 0,
-                transform: `translateY(${virtualRow.start}px)`,
-                width: '100%',
-              }}
-            >
-              {row.getVisibleCells().map(cell => (
-                <div key={cell.id} style={{ display: 'inline-block', padding: 8 }}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </div>
-              ))}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+	return (
+		<div
+			ref={scrollRef}
+			style={{ height, width, overflow: 'auto', lineHeight: 1.5, ...style }}
+			className={className}
+		>
+			<div style={{ position: 'relative', height: scrollHeight }}>
+				{virtualItems.map(item => (
+					<div
+						key={item.index}
+						ref={getMeasureRef(item.index)}
+						style={{
+							position: 'absolute',
+							top: 0,
+							left: 0,
+							width: '100%',
+							transform: `translateY(${item.start}px)`,
+						}}
+					>
+						{renderItem(item.index)}
+					</div>
+				))}
+			</div>
+		</div>
+	);
 };
 ```
 
-**Important:** do not set a fixed `height` on rows — let `measureElement` + ResizeObserver measure the actual height. Use `transform: translateY(...)` for positioning.
+## Table example (with @tanstack/react-table and expandable rows)
 
-#### Dynamic row height (expand/collapse)
-
-`measureElement` uses ResizeObserver under the hood. When a row's height changes (e.g. user expands a row), positions of all subsequent rows are recalculated automatically:
+Column widths must be set on both header and body cells (`header.getSize()` / `cell.column.getSize()` with `flexShrink: 0`) so columns stay aligned. The header is `position: sticky`. Expanding a row changes its height — it gets re-measured automatically.
 
 ```tsx
-const [expanded, setExpanded] = useState({});
+import { useState } from 'react';
+import {
+	useReactTable,
+	getCoreRowModel,
+	getExpandedRowModel,
+	flexRender,
+	createColumnHelper,
+} from '@tanstack/react-table';
+import { useVirtualizer } from 'clear-virtualizer';
 
-// In the table setup:
-const table = useReactTable({
-  data, columns,
-  state: { expanded },
-  onExpandedChange: old => setExpanded(old),
-  getExpandedRowModel: getCoreRowModel(),
-  getCoreRowModel: getCoreRowModel(),
-});
+type User = { id: number; name: string; email: string; role: string };
 
-// In the row renderer:
-<div ref={el => rowVirtualizer.measureElement(el, virtualRow.index)}>
-  <div style={{ display: 'flex' }}>
-    {row.getVisibleCells().map(cell => /* ... */)}
-  </div>
-  {row.getIsExpanded() && (
-    <div>Expanded content here — height is measured automatically</div>
-  )}
-</div>
-```
+const data: User[] = Array.from({ length: 100_000 }, (_, i) => ({
+	id: i + 1,
+	name: `User ${i + 1}`,
+	email: `user${i + 1}@example.com`,
+	role: ['Admin', 'Editor', 'Viewer'][i % 3],
+}));
 
-#### Plain list
+const columnHelper = createColumnHelper<User>();
 
-```tsx
-const items = Array.from({ length: 100000 }, (_, i) => `Item ${i}`);
+const columns = [
+	columnHelper.display({
+		id: 'expand',
+		size: 40,
+		cell: ({ row }) => (
+			<button onClick={() => row.toggleExpanded()}>{row.getIsExpanded() ? '▼' : '▶'}</button>
+		),
+	}),
+	columnHelper.accessor('id', { header: 'ID', size: 60 }),
+	columnHelper.accessor('name', { header: 'Name', size: 150 }),
+	columnHelper.accessor('email', { header: 'Email', size: 200 }),
+	columnHelper.accessor('role', { header: 'Role', size: 100 }),
+];
 
-const List = () => {
-  const { virtualItems, scrollHeight, scrollRef, measureElement } = useVirtualizer({
-    count: items.length,
-    estimateSize: () => 40,
-    overscan: 5,
-  });
+export const VirtualTable = () => {
+	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+	const table = useReactTable({
+		data,
+		columns,
+		state: { expanded },
+		onExpandedChange: old => setExpanded(old as Record<string, boolean>),
+		getExpandedRowModel: getExpandedRowModel(),
+		getCoreRowModel: getCoreRowModel(),
+	});
+	const rows = table.getRowModel().rows;
+	const { virtualItems, scrollHeight, scrollRef, getMeasureRef } = useVirtualizer({
+		count: rows.length,
+		estimateSize: () => 44,
+		overscan: 10,
+	});
 
-  return (
-    <div ref={scrollRef} style={{ height: 400, overflow: 'auto' }}>
-      <div style={{ position: 'relative', height: scrollHeight }}>
-        {virtualItems.map(virtualRow => (
-          <div
-            key={virtualRow.index}
-            ref={el => measureElement(el, virtualRow.index)}
-            style={{
-              position: 'absolute',
-              top: 0,
-              transform: `translateY(${virtualRow.start}px)`,
-              width: '100%',
-            }}
-          >
-            {items[virtualRow.index]}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+	return (
+		<div ref={scrollRef} style={{ height: 550, overflow: 'auto' }}>
+			<div style={{ position: 'relative', height: scrollHeight }}>
+				{table.getHeaderGroups().map(headerGroup => (
+					<div
+						key={headerGroup.id}
+						style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', background: '#f5f5f5' }}
+					>
+						{headerGroup.headers.map(header => (
+							<div
+								key={header.id}
+								style={{ width: header.getSize(), padding: '8px 12px', flexShrink: 0 }}
+							>
+								{flexRender(header.column.columnDef.header, header.getContext())}
+							</div>
+						))}
+					</div>
+				))}
+				{virtualItems.map(virtualRow => {
+					const row = rows[virtualRow.index];
+					return (
+						<div
+							key={row.id}
+							ref={getMeasureRef(virtualRow.index)}
+							style={{
+								position: 'absolute',
+								top: 0,
+								left: 0,
+								width: '100%',
+								transform: `translateY(${virtualRow.start}px)`,
+							}}
+						>
+							<div style={{ display: 'flex' }}>
+								{row.getVisibleCells().map(cell => (
+									<div
+										key={cell.id}
+										style={{ width: cell.column.getSize(), padding: '8px 12px', flexShrink: 0 }}
+									>
+										{flexRender(cell.column.columnDef.cell, cell.getContext())}
+									</div>
+								))}
+							</div>
+							{row.getIsExpanded() && (
+								<div style={{ padding: '8px 16px' }}>Details for {row.original.name}</div>
+							)}
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
 };
 ```
 
----
+## scrollToIndex
 
-### `<Virtualize />` (component)
-
-A container component that virtualizes a list of ReactNode elements with dynamic height support.
-
-| Prop        | Type                      | Description                                                                                |
-| ----------- | ------------------------- |--------------------------------------------------------------------------------------------|
-| `children`  | `ReactNode[]`             | List of items to be virtualized                                                            |
-| `height`    | `CSSProperties['height']` | Height of the scroll container                                                             |
-| `width`     | `CSSProperties['width']`  | Optional width of the scroll container                                                     |
-| `className` | `string`                  | Optional class name for container                                                          |
-| `style`     | `CSSProperties`           | Additional inline styles                                                                   |
-| `overScan`  | `number`                  | Number of extra items rendered above and below the visible viewport for smoother scrolling |
-
-### 📏 Default behavior
-If overScan is not provided, a default internal value is used.
-Items are measured automatically via ResizeObserver.
-Layout is recalculated incrementally as items mount or change size.
-
-### 🧠 Notes
-children are treated as a static array structure (ReactNode[]), not a render-prop stream.
-Virtualization is driven by scroll position + internal offset cache.
-Item sizes are not required upfront — they are inferred at runtime.
-
-## 🚀 Key Features
-
-### ⚡ Zero-config virtualization
-
-No item render functions, no size estimators, no manual measurement hooks required.
-
-Just pass:
-
-```tsx
-import Virtualize from 'clear-virtualize';
-
-<Virtualize height={500} width={400}>
-  {items.map(item => <div>{item}</div>)}
-</Virtualize>
+```ts
+scrollToIndex(34567); // align defaults to 'start'
+scrollToIndex(34567, { align: 'center' });
+scrollToIndex(34567, { align: 'end' });
 ```
 
-### 📏 Dynamic height support
+| `align`  | Positions the row...              |
+| -------- | --------------------------------- |
+| `start`  | At the top of the viewport (default) |
+| `center` | In the middle of the viewport     |
+| `end`    | At the bottom of the viewport     |
 
-List items can change height at any time (expansion, collapse, async content loading, etc.).
+If the row is far away and its neighbors were never measured, the hook first jumps to the estimated position, measures the rows around the target, and corrects the position. A manual scroll during that correction cancels it and hands control back to the user.
 
-The system automatically:
+## estimateSize
 
-- measures elements via ResizeObserver
-- updates internal offsets incrementally
-- repositions affected rows without full recomputation
+`estimateSize` is only a starting guess until real measurements arrive. The closer it is to reality, the less rows visually shift on fast scroll through unmeasured regions: underestimated rows overlap until measured, overestimated ones leave temporary gaps. Pass a value near your average row height.
 
-### 🧠 Self-adjusting layout model
+## Limitations
 
-Instead of assuming fixed item size, the library maintains:
+- Vertical scrolling only — no horizontal virtualization, no sticky columns.
+- The internal offset tree keeps one `float64` per row (~8 MB per million rows).
+- Server-side rendering is not covered by tests.
 
-- a per-row offset cache
-- an evolving average row height estimate
-- incremental correction when real DOM measurements arrive
-
-This allows the list to remain stable even when item heights are initially unknown or heterogeneous.
-
-### 🔄 Incremental layout correction
-
-When item size changes:
-
-- only affected offsets are updated
-- downstream rows are adjusted incrementally
-- no full list reflow is required
-
-This keeps scroll behavior smooth even under frequent resize events.
-
-### 📦 ReactNode-first API
-
-The library works directly with React elements:
-
-- no render-prop abstraction
-- no item renderer indirection layer
-- no external data normalization required
-
-### 🧪 Performance characteristics
-
-Designed to handle:
-
-- 100,000–400,000 items
-- rapid scroll wheel / trackpad flicking
-- scrollbar drag scrolling
-- dynamic DOM height changes
-
-Rendering is strictly bounded to the visible viewport plus overscan region.
-
-### 🧩 Internal model (high level)
-
-The virtualization logic is based on three core structures:
-
-Offset cache — stores cumulative positions of measured rows
-Height registry — stores observed DOM heights per index
-Estimated row height — used for unmeasured items
-
-As elements mount and resize, estimates are progressively replaced with real measurements, improving layout accuracy over time.
-
-### 📌 Design philosophy
-
-This library prioritizes:
-
-- simplicity of integration
-- correctness under dynamic UI changes
-- minimal API surface
-- DOM-driven layout truth (not pre-declared sizes)
-
-The goal is to make virtualization behave like a natural extension of React rendering, rather than a separate abstraction layer.
-
-### ⚠️ Trade-offs
-
-This approach intentionally:
-
-- keeps ReactNode creation outside the virtualizer (for API simplicity)
-- relies on runtime measurement instead of precomputed layout
-- uses heuristic-based estimation for initial render pass
-
-These trade-offs favor developer experience and adaptability over strict theoretical optimality.
-
-### ❓ Why not use existing solutions?
-
-There are several well-established virtualization libraries in the React ecosystem, such as React Window and TanStack Virtual. They are powerful, battle-tested, and suitable for most production use cases.
-
-This library does not aim to replace them. It takes a different approach in a few specific areas.
-
-### 🧩 1. Simpler mental model
-
-Most virtualization libraries require the developer to think in terms of:
-
-item count
-item renderer function
-explicit measurement or estimation logic
-layout configuration (fixed/variable size modes)
-
-This library removes that abstraction layer.
-
-You work directly with:
-
-- ReactNode[] → virtualized rendering
-
-- No render-prop layer, no explicit size model setup.
-
-- The goal is to reduce the conceptual distance between “React rendering” and “virtualized rendering”.
-
-### 📏 2. No explicit size management API
-
-Traditional libraries usually require one of:
-
-- fixed item height
-- estimateSize function
-- manual measurement hooks
-
-This library instead:
-
-- measures DOM nodes automatically via ResizeObserver
-- builds layout incrementally from real rendered output
-- adapts when item size changes at runtime
-
-This makes it more suitable for cases where:
-
-- item height is not known in advance
-- height can change after mount (expansion, async content, dynamic UI)
-
-### 🔄 3. Designed for mutable layouts
-
-This implementation assumes that:
-
-item height is not a stable property
-
-Many virtualization systems treat height as either:
-
-static (fixed-size mode), or
-externally provided (estimated mode)
-
-Here, height is treated as:
-
-a runtime-evolving property of the DOM itself
-
-The layout model continuously self-corrects as measurements arrive.
-
-### ⚙️ 4. Reduced configuration surface
-
-Existing solutions are highly configurable, which is powerful but increases complexity:
-
-- measurement strategies
-- cache strategies
-- scroll container handling
-- item key management
-
-This library intentionally reduces configuration to:
-
-“wrap your list and render it”
-
-At the cost of flexibility, but with significantly lower setup overhead.
-
-### ⚠️ When NOT to use this library
-
-This approach is not optimal if you need:
-
-- highly customized rendering pipelines (render-props / data-driven virtualization)
-- complex grid layouts or multi-axis virtualization
-- strict deterministic layout behavior across environments
-- fine-grained control over measurement lifecycle
-- integration with existing virtualization infrastructure
-
-In those cases, React Window or TanStack Virtual are better choices.
-
-### 💬 Closing note
-
-This library is not trying to reinvent virtualization theory — it’s an attempt to make dynamic-height virtualization feel unforced in React, without requiring the developer to design a rendering pipeline around it.
-
-## 📄 License
+## License
 
 MIT
-
-## 👤 Author
-
-Andrew Bubnov
-
