@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useVirtualizer } from '../hooks/useVirtualizer';
+import { useVirtualizer } from '../../hooks/useVirtualizer';
 
 function createScrollElement(clientHeight: number = 600) {
 	const el = document.createElement('div');
@@ -250,5 +250,76 @@ describe('useVirtualizer', () => {
 		expect(disconnect).toHaveBeenCalled();
 
 		vi.unstubAllGlobals();
+	});
+
+	it('scrollToIndex settles with target in viewport after re-measurement', async () => {
+		const callbacks: ResizeObserverCallback[] = [];
+		vi.stubGlobal(
+			'ResizeObserver',
+			class {
+				constructor(cb: ResizeObserverCallback) {
+					callbacks.push(cb);
+				}
+				observe = vi.fn();
+				disconnect = vi.fn();
+				unobserve = vi.fn();
+			}
+		);
+
+		const { result, el } = setup(1000, { clientHeight: 200 });
+
+		act(() => {
+			result.current.scrollToIndex(500, { align: 'start' });
+		});
+		expect(el.scrollTop).toBe(500 * ROW_HEIGHT);
+
+		// Report 120px real heights vs the 40px estimate.
+		act(() => {
+			for (let i = 497; i <= 503; i++) {
+				result.current.getMeasureRef(i)(document.createElement('div'));
+			}
+		});
+		act(() => {
+			for (const cb of callbacks) {
+				cb([{ borderBoxSize: [{ blockSize: 120 }] } as unknown as ResizeObserverEntry], {} as ResizeObserver);
+			}
+		});
+
+		await act(async () => {
+			await new Promise(res => setTimeout(res, 300)); // Let the rAF settle chain flush.
+		});
+
+		// prefixSum(500) = 497*40 + 3*120 = 20240
+		expect(el.scrollTop).toBe(20240);
+		const indexes = result.current.virtualItems.map(v => v.index);
+		expect(indexes).toContain(500);
+		expect(result.current.virtualItems.find(v => v.index === 500)?.start).toBe(el.scrollTop);
+
+		vi.unstubAllGlobals();
+	});
+
+	it('user scroll during settle cancels scrollToIndex', async () => {
+		const { result, el } = setup(COUNT, { clientHeight: 200 });
+
+		act(() => {
+			result.current.scrollToIndex(50, { align: 'start' });
+		});
+		expect(el.scrollTop).toBe(50 * ROW_HEIGHT);
+
+		act(() => {
+			el.dispatchEvent(new Event('scroll'));
+		});
+		el.scrollTop = 0;
+		act(() => {
+			el.dispatchEvent(new Event('scroll'));
+		});
+
+		await act(async () => {
+			await new Promise(res => setTimeout(res, 300)); // Let the rAF settle chain flush.
+		});
+
+		expect(el.scrollTop).toBe(0);
+		expect(result.current.virtualItems[0].index).toBe(0);
+		expect(result.current.virtualItems.map(v => v.index)).not.toContain(50);
 	});
 });
