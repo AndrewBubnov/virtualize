@@ -1,4 +1,4 @@
-[![npm version](https://img.shields.io/npm/v/clear-virtualizer.svg)(https://www.npmjs.com/package/clear-virtualizer)
+[![npm version](https://img.shields.io/npm/v/clear-virtualizer.svg)](https://www.npmjs.com/package/clear-virtualizer)
 
 # clear-virtualizer
 
