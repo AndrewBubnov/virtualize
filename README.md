@@ -20,26 +20,25 @@ import { useVirtualizer, type Options, type ScrollAlign, type VirtualItem } from
 
 ```ts
 const { virtualItems, scrollHeight, scrollRef, getMeasureRef, scrollToIndex } = useVirtualizer({
-  count: 100000,
-  estimateSize: () => 44,
-  overscan: 10,
+	count: 100000,
+	estimateSize: () => 44,
+	overscan: 10,
 });
 ```
 
-| Option         | Type                                       | Description                                              |
-| -------------- |--------------------------------------------| -------------------------------------------------------- |
-| `count`        | `number`                                   | Total number of rows                                     |
+| Option         | Type                                       | Description                                                |
+| -------------- | ------------------------------------------ | ---------------------------------------------------------- |
+| `count`        | `number`                                   | Total number of rows                                       |
 | `estimateSize` | `((index: number) => number) \| undefined` | Approximate row height in px, used until a row is measured |
-| `overscan`     | `number \| undefined`                      | Extra rows rendered above/below the viewport (default: 3) |
+| `overscan`     | `number \| undefined`                      | Extra rows rendered above/below the viewport (default: 3)  |
 
-
-| Return value    | Type                                          | Description                                             |
-| --------------- | --------------------------------------------- | ------------------------------------------------------- |
-| `virtualItems`  | `VirtualItem[]`                               | Rows to render: `{ index, start, size, end }` (px)      |
-| `scrollHeight`  | `number`                                      | Total scrollable height (px)                            |
-| `scrollRef`     | `(el: HTMLElement \| null) => void`           | Callback ref — attach to the scroll container           |
-| `getMeasureRef` | `(index: number) => (el: HTMLElement \| null) => void` | Attach the returned ref to each row for measuring |
-| `scrollToIndex` | `(index: number, options?: { align?: ScrollAlign }) => void` | Scroll to a row |
+| Return value    | Type                                                         | Description                                        |
+| --------------- | ------------------------------------------------------------ | -------------------------------------------------- |
+| `virtualItems`  | `VirtualItem[]`                                              | Rows to render: `{ index, start, size, end }` (px) |
+| `scrollHeight`  | `number`                                                     | Total scrollable height (px)                       |
+| `scrollRef`     | `(el: HTMLElement \| null) => void`                          | Callback ref — attach to the scroll container      |
+| `getMeasureRef` | `(index: number) => (el: HTMLElement \| null) => void`       | Attach the returned ref to each row for measuring  |
+| `scrollToIndex` | `(index: number, options?: { align?: ScrollAlign }) => void` | Scroll to a row                                    |
 
 Do not set a fixed `height` on rows — let them size naturally so `getMeasureRef` measures the real height. Position rows with `transform: translateY(...)`.
 
@@ -134,9 +133,7 @@ const columns = [
 	columnHelper.display({
 		id: 'expand',
 		size: 40,
-		cell: ({ row }) => (
-			<button onClick={() => row.toggleExpanded()}>{row.getIsExpanded() ? '▼' : '▶'}</button>
-		),
+		cell: ({ row }) => <button onClick={() => row.toggleExpanded()}>{row.getIsExpanded() ? '▼' : '▶'}</button>,
 	}),
 	columnHelper.accessor('id', { header: 'ID', size: 60 }),
 	columnHelper.accessor('name', { header: 'Name', size: 150 }),
@@ -223,11 +220,11 @@ scrollToIndex(34567, { align: 'center' });
 scrollToIndex(34567, { align: 'end' });
 ```
 
-| `align`  | Positions the row...              |
-| -------- | --------------------------------- |
+| `align`  | Positions the row...                 |
+| -------- | ------------------------------------ |
 | `start`  | At the top of the viewport (default) |
-| `center` | In the middle of the viewport     |
-| `end`    | At the bottom of the viewport     |
+| `center` | In the middle of the viewport        |
+| `end`    | At the bottom of the viewport        |
 
 If the row is far away and its neighbors were never measured, the hook first jumps to the estimated position, measures the rows around the target, and corrects the position. A manual scroll during that correction cancels it and hands control back to the user.
 
@@ -237,9 +234,9 @@ If the row is far away and its neighbors were never measured, the hook first jum
 
 ## Limitations
 
-- Vertical scrolling only — no horizontal virtualization, no sticky columns.
-- The internal offset tree keeps one `float64` per row (~8 MB per million rows).
-- Server-side rendering is not covered by tests.
+-   Vertical scrolling only — no horizontal virtualization, no sticky columns.
+-   The internal offset tree keeps one `float64` per row (~8 MB per million rows).
+-   Server-side rendering is not covered by tests.
 
 ## License
 
