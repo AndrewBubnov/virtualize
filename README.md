@@ -24,6 +24,8 @@ const { virtualItems, scrollHeight, scrollRef, getMeasureRef, scrollToIndex } = 
   estimateSize: () => 44,
   overscan: 10,
 });
+```
+
 ```ts
 
 | Option         | Type                                       | Description                                              |
@@ -41,6 +43,7 @@ const { virtualItems, scrollHeight, scrollRef, getMeasureRef, scrollToIndex } = 
 | `scrollRef`     | `(el: HTMLElement \| null) => void`           | Callback ref — attach to the scroll container           |
 | `getMeasureRef` | `(index: number) => (el: HTMLElement \| null) => void` | Attach the returned ref to each row for measuring |
 | `scrollToIndex` | `(index: number, options?: { align?: ScrollAlign }) => void` | Scroll to a row |
+```
 
 Do not set a fixed `height` on rows — let them size naturally so `getMeasureRef` measures the real height. Position rows with `transform: translateY(...)`.
 
