@@ -1,3 +1,5 @@
+[![npm version](https://img.shields.io/npm/v/clear-virtualizer.svg)(https://www.npmjs.com/package/clear-virtualizer)
+
 # clear-virtualizer
 
 One hook for vertical virtualized lists and tables with dynamic row heights. Rows are measured automatically via `ResizeObserver` — no manual measuring, no fixed heights. Works for an unlimited number of rows.
