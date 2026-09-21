@@ -1,6 +1,6 @@
 {
   "name": "clear-virtualizer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A lightweight React hook for virtualized lists and tables with dynamic row heights, measured automatically",
   "type": "module",
   "main": "./lib/index.cjs",
@@ -85,7 +85,6 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
     "jsdom": "^30.0.1",
-    "lorem-ipsum": "^2.0.8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "typescript": "^5.0.2",
