@@ -26,16 +26,13 @@ const { virtualItems, scrollHeight, scrollRef, getMeasureRef, scrollToIndex } = 
 });
 ```
 
-```ts
-
 | Option         | Type                                       | Description                                              |
 | -------------- |--------------------------------------------| -------------------------------------------------------- |
 | `count`        | `number`                                   | Total number of rows                                     |
 | `estimateSize` | `((index: number) => number) \| undefined` | Approximate row height in px, used until a row is measured |
 | `overscan`     | `number \| undefined`                      | Extra rows rendered above/below the viewport (default: 3) |
-```
 
-```ts
+
 | Return value    | Type                                          | Description                                             |
 | --------------- | --------------------------------------------- | ------------------------------------------------------- |
 | `virtualItems`  | `VirtualItem[]`                               | Rows to render: `{ index, start, size, end }` (px)      |
@@ -43,7 +40,6 @@ const { virtualItems, scrollHeight, scrollRef, getMeasureRef, scrollToIndex } = 
 | `scrollRef`     | `(el: HTMLElement \| null) => void`           | Callback ref — attach to the scroll container           |
 | `getMeasureRef` | `(index: number) => (el: HTMLElement \| null) => void` | Attach the returned ref to each row for measuring |
 | `scrollToIndex` | `(index: number, options?: { align?: ScrollAlign }) => void` | Scroll to a row |
-```
 
 Do not set a fixed `height` on rows — let them size naturally so `getMeasureRef` measures the real height. Position rows with `transform: translateY(...)`.
 
