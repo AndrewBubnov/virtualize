@@ -24,14 +24,16 @@ const { virtualItems, scrollHeight, scrollRef, getMeasureRef, scrollToIndex } = 
   estimateSize: () => 44,
   overscan: 10,
 });
-```
+```ts
 
 | Option         | Type                                       | Description                                              |
 | -------------- |--------------------------------------------| -------------------------------------------------------- |
 | `count`        | `number`                                   | Total number of rows                                     |
 | `estimateSize` | `((index: number) => number) \| undefined` | Approximate row height in px, used until a row is measured |
 | `overscan`     | `number \| undefined`                      | Extra rows rendered above/below the viewport (default: 3) |
+```
 
+```ts
 | Return value    | Type                                          | Description                                             |
 | --------------- | --------------------------------------------- | ------------------------------------------------------- |
 | `virtualItems`  | `VirtualItem[]`                               | Rows to render: `{ index, start, size, end }` (px)      |
