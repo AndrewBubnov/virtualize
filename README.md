@@ -232,11 +232,14 @@ If the row is far away and its neighbors were never measured, the hook first jum
 
 `estimateSize` is only a starting guess until real measurements arrive. The closer it is to reality, the less rows visually shift on fast scroll through unmeasured regions: underestimated rows overlap until measured, overestimated ones leave temporary gaps. Pass a value near your average row height.
 
+## SSR
+
+Server-side rendering is supported: on the server the hook renders an empty container (`virtualItems: []`, `scrollHeight: 0`) without touching browser APIs. Rows appear after hydration once the scroll container is attached and `ResizeObserver` reports real heights.
+
 ## Limitations
 
 -   Vertical scrolling only — no horizontal virtualization, no sticky columns.
 -   The internal offset tree keeps one `float64` per row (~8 MB per million rows).
--   Server-side rendering is not covered by tests.
 
 ## License
 

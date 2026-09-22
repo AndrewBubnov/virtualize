@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FenwickTree } from '../fenwickTree';
 import { useLatest } from './useLatest';
 import { classifySettleScroll, computeTargetScrollTop, getFenwickTree, getScale, getViewportRange } from '../utils';
@@ -141,6 +141,8 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			existing.observer.disconnect();
 			observersRef.current.delete(index);
 		}
+
+		if (typeof ResizeObserver === 'undefined') return;
 
 		const observer = new ResizeObserver(([entry]) => {
 			const height = entry?.borderBoxSize[0]?.blockSize;
@@ -311,6 +313,20 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 				}
 			}
 			setScrollOffset(element ? { value: element?.scrollTop } : { value: 0 });
+		},
+		[handleScroll]
+	);
+
+	useEffect(
+		() => () => {
+			if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+			if (tickRafRef.current !== null) cancelAnimationFrame(tickRafRef.current);
+			observersRef.current.forEach(entry => entry.observer.disconnect());
+			observersRef.current.clear();
+			containerObserverRef.current?.disconnect();
+			containerObserverRef.current = null;
+			scrollElementRef.current?.removeEventListener('scroll', handleScroll);
+			refCacheRef.current.clear();
 		},
 		[handleScroll]
 	);
