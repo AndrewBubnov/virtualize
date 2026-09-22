@@ -1,6 +1,6 @@
 {
   "name": "clear-virtualizer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A lightweight React hook for virtualized lists and tables with dynamic row heights, measured automatically",
   "type": "module",
   "main": "./lib/index.cjs",
