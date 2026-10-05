@@ -8,9 +8,11 @@ export type Options = {
     count: number;
     estimateSize?: (index: number) => number;
     overscan?: number;
+    /** Height in px of a sticky header overlaying the top of the scroll container. Excluded from the visible window. */
+    headerHeight?: number;
 };
 export type ScrollAlign = 'start' | 'center' | 'end';
-export declare function useVirtualizer({ count, estimateSize, overscan }: Options): {
+export declare function useVirtualizer({ count, estimateSize, overscan, headerHeight }: Options): {
     virtualItems: VirtualItem[];
     scrollHeight: number;
     scrollToIndex: (index: number, options?: {

@@ -421,6 +421,64 @@ describe('useVirtualizer StrictMode', () => {
 	});
 });
 
+describe('useVirtualizer headerHeight', () => {
+	const COUNT = 100;
+	const ROW_HEIGHT = 40;
+	const VIEWPORT = 200;
+	const HEADER = 50;
+
+	function setupWithHeader(headerHeight: number) {
+		const el = createScrollElement(VIEWPORT);
+		const { result } = renderHook(() =>
+			useVirtualizer({ count: COUNT, estimateSize: () => ROW_HEIGHT, overscan: 0, headerHeight })
+		);
+
+		act(() => {
+			result.current.scrollRef(el);
+		});
+
+		return { result, el };
+	}
+
+	it('starts the window below the sticky header', () => {
+		const { result } = setupWithHeader(HEADER);
+
+		// Visible band is [50, 200]: first row (index 1, [40, 80]) is partially covered.
+		expect(result.current.scrollHeight).toBe(COUNT * ROW_HEIGHT);
+		expect(result.current.virtualItems[0].index).toBe(1);
+		expect(result.current.virtualItems[0].start).toBe(ROW_HEIGHT);
+	});
+
+	it('scrollToIndex with align start lands below the header', () => {
+		const { result, el } = setupWithHeader(HEADER);
+
+		act(() => {
+			result.current.scrollToIndex(10);
+		});
+		// Row top (400) sits exactly at the header bottom: 400 - 50 scrolled + 50 header.
+		expect(el.scrollTop).toBe(10 * ROW_HEIGHT - HEADER);
+	});
+
+	it('scrollToIndex with align center centers in the visible area', () => {
+		const { result, el } = setupWithHeader(HEADER);
+
+		act(() => {
+			result.current.scrollToIndex(10, { align: 'center' });
+		});
+		// Row center (420) at the visible center (scrollTop + 50 header + 75 half-window).
+		expect(el.scrollTop).toBe(10 * ROW_HEIGHT + ROW_HEIGHT / 2 - HEADER - (VIEWPORT - HEADER) / 2);
+	});
+
+	it('scrollToIndex with align end is unaffected by the header', () => {
+		const { result, el } = setupWithHeader(HEADER);
+
+		act(() => {
+			result.current.scrollToIndex(10, { align: 'end' });
+		});
+		expect(el.scrollTop).toBe(10 * ROW_HEIGHT - (VIEWPORT - ROW_HEIGHT));
+	});
+});
+
 describe('useVirtualizer count change', () => {
 	it('preserves measured row sizes when count changes', () => {
 		const itemCallbacks: ResizeObserverCallback[] = [];

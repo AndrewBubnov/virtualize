@@ -82,20 +82,17 @@ const App = () => {
 		<div className="sandbox-page">
 			<h1>clear-virtualizer sandbox</h1>
 			<p>
-				Live demo of the <code>useVirtualizer</code> hook: vertical virtualization with dynamic row heights.
-				Rows are measured automatically via <code>ResizeObserver</code> — no manual measuring, no fixed
-				heights. Only the visible window (plus overscan) is mounted in the DOM.
+				Live demo of the <b>useVirtualizer</b> hook: vertical virtualization with dynamic row heights. Rows are
+				measured automatically via ResizeObserver — no manual measuring, no fixed heights. Only the visible
+				window (plus overscan) is mounted in the DOM.
 			</p>
-			<code className="sandbox-code">npm i clear-virtualizer</code>
 			<p>
-				Use the sliders to change how many rows are virtualized (applied on release). The list renders items
-				on demand from the index, so it stays light even at {formatCount(LIST_MAX)} rows. The table builds
-				real row objects (and runs them through TanStack Table), so its slider is capped at{' '}
-				{formatCount(TABLE_MAX)} — generating more mock rows is what makes the browser crawl, not the
-				virtualizer itself.
+				Use the sliders to change how many rows are virtualized (applied on release). The list renders items on
+				demand from the index, so it stays light even at 3M rows. The table builds real row objects (and runs
+				them through TanStack Table), so its slider is capped at {formatCount(TABLE_MAX)} — generating more mock
+				rows is what makes the browser crawl, not the virtualizer itself.
 				{isMobile && (
 					<>
-						{' '}
 						On small screens the caps are lower ({formatCount(LIST_MAX_MOBILE)} /{' '}
 						{formatCount(TABLE_MAX_MOBILE)}) to stay within mobile memory limits.
 					</>
@@ -107,8 +104,8 @@ const App = () => {
 					<h2>List example</h2>
 					<p className="demo-desc">
 						Plain virtualized list from the README: rows are positioned with{' '}
-						<code>transform: translateY(...)</code> and measured through <code>getMeasureRef</code>.
-						Texts have different lengths, so every row gets its own height.
+						<i>transform: translateY(...)</i> and measured through <i>getMeasureRef</i>. Texts have
+						different lengths, so every row gets its own height.
 					</p>
 					<label>
 						Rows: <strong>{formatCount(effectiveListCount)}</strong>
@@ -122,7 +119,7 @@ const App = () => {
 					</label>
 					<VirtualizedList
 						count={effectiveListCount}
-						height={400}
+						height={260}
 						overscan={10}
 						estimateSize={() => 44}
 						renderItem={index => (
@@ -136,8 +133,8 @@ const App = () => {
 				<section className="demo-panel">
 					<h2>Table example</h2>
 					<p className="demo-desc">
-						Table with <code>@tanstack/react-table</code> and expandable rows. Column widths are set on
-						header and body cells so columns stay aligned, the header is <code>position: sticky</code>.
+						Table with <i>@tanstack/react-table</i> and expandable rows. Column widths are set on header and
+						body cells so columns stay aligned, the header stays fixed above and follows horizontal scroll.
 						Click ▶ on any row — expanding changes its height and it gets re-measured automatically.
 					</p>
 					<label>

@@ -12,7 +12,7 @@ export declare const getViewportRange: (tree: FenwickTree, logicalScrollOffset: 
     viewportStart: number;
     viewportEnd: number;
 };
-export declare const computeTargetScrollTop: (tree: FenwickTree, index: number, align: 'start' | 'center' | 'end', containerHeight: number, scale: number, count: number) => {
+export declare const computeTargetScrollTop: (tree: FenwickTree, index: number, align: 'start' | 'center' | 'end', containerHeight: number, scale: number, count: number, headerHeight?: number) => {
     targetScrollTop: number;
     logicalScrollOffset: number;
 };

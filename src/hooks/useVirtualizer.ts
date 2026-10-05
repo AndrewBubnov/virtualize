@@ -21,6 +21,8 @@ export type Options = {
 	count: number;
 	estimateSize?: (index: number) => number;
 	overscan?: number;
+	/** Height in px of a sticky header overlaying the top of the scroll container. Excluded from the visible window. */
+	headerHeight?: number;
 };
 
 export type ScrollAlign = 'start' | 'center' | 'end';
@@ -30,7 +32,8 @@ type PendingTarget = {
 	align: ScrollAlign;
 };
 
-export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN }: Options) {
+export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCAN, headerHeight = 0 }: Options) {
+	const headerOffset = Math.max(headerHeight, 0);
 	const [scrollOffset, setScrollOffset] = useState<{ value: number }>({ value: 0 });
 	const [forcedRange, setForcedRange] = useState<{ start: number; end: number } | null>(null);
 	const scrollElementRef = useRef<HTMLElement | null>(null);
@@ -81,6 +84,9 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			const containerHeight = el.clientHeight;
 			const logicalTotal = tree.total();
 			const { scale, physicalTotal } = getScale(logicalTotal);
+			// Rows hidden behind the sticky header are not visible: the window
+			// starts below it. Item positions stay canvas-absolute either way.
+			const visibleHeight = Math.max(containerHeight - headerOffset, 0);
 
 			const pendingTarget = pendingTargetRef.current;
 			let logicalScrollOffset: number;
@@ -92,7 +98,8 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 					pendingTarget.align,
 					containerHeight,
 					scale,
-					count
+					count,
+					headerOffset
 				);
 				logicalScrollOffset = targetLogicalOffset;
 
@@ -100,7 +107,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 					el.scrollTop = targetScrollTop;
 				}
 			} else {
-				logicalScrollOffset = physicalScrollOffset / scale;
+				logicalScrollOffset = (physicalScrollOffset + headerOffset) / scale;
 			}
 
 			let startIndex: number;
@@ -113,7 +120,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 				const { startIndex: viewportStartIndex, endIndex: viewportEndIndex } = getViewportRange(
 					tree,
 					logicalScrollOffset,
-					containerHeight,
+					pendingTarget !== null ? containerHeight : visibleHeight,
 					scale,
 					overscan,
 					count
@@ -124,7 +131,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 
 			const startOffsetLogical = tree.prefixSum(startIndex);
 			const startOffsetPhysical =
-				(pendingTarget !== null ? logicalScrollOffset * scale : physicalScrollOffset) +
+				(pendingTarget !== null ? logicalScrollOffset * scale : physicalScrollOffset + headerOffset) +
 				(startOffsetLogical - logicalScrollOffset) * scale;
 
 			const virtualItems: VirtualItem[] = [];
@@ -137,7 +144,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 
 			return { virtualItems, scrollHeight: physicalTotal };
 		},
-		[count, forcedRange, overscan]
+		[count, forcedRange, overscan, headerOffset]
 	);
 
 	const observeItem = useCallback((index: number, element: HTMLElement) => {
@@ -235,7 +242,8 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 				pending.align,
 				el.clientHeight,
 				scale,
-				countValue
+				countValue,
+				headerOffset
 			);
 			const kind = classifySettleScroll(
 				el.scrollTop,
@@ -266,8 +274,8 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			}
 			const { startIndex, endIndex } = getViewportRange(
 				tree,
-				el.scrollTop / scale,
-				el.clientHeight,
+				(el.scrollTop + headerOffset) / scale,
+				Math.max(el.clientHeight - headerOffset, 0),
 				scale,
 				overscanValue,
 				countValue
@@ -279,7 +287,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			}
 			releaseSettle(el.scrollTop);
 		});
-	}, [releaseSettle, countRef, overscanRef]);
+	}, [releaseSettle, countRef, overscanRef, headerOffset]);
 
 	const handleScroll = useCallback(() => {
 		if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
@@ -298,7 +306,8 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 					pending.align,
 					el.clientHeight,
 					scale,
-					countRef.current
+					countRef.current,
+					headerOffset
 				);
 				const kind = classifySettleScroll(
 					el.scrollTop,
@@ -314,7 +323,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 			}
 			setScrollOffset({ value: el.scrollTop });
 		});
-	}, [releaseSettle, countRef]);
+	}, [releaseSettle, countRef, headerOffset]);
 
 	const scrollRef = useCallback((element: HTMLElement | null) => {
 		scrollElementRef.current = element;

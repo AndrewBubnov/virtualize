@@ -51,23 +51,30 @@ export const computeTargetScrollTop = (
 	align: 'start' | 'center' | 'end',
 	containerHeight: number,
 	scale: number,
-	count: number
+	count: number,
+	headerHeight: number = 0
 ) => {
 	const targetIndex = Math.max(0, Math.min(index, count - 1));
 	const targetOffset = tree.prefixSum(targetIndex);
 	const itemLogicalSize = tree.prefixSum(targetIndex + 1) - targetOffset;
+	const visibleHeight = Math.max(containerHeight - headerHeight, 0);
 
+	// Returned logicalScrollOffset is the top of the *visible* window (below the
+	// sticky header): logical == (scrollTop + header) / scale, so the physical
+	// target is logical * scale - header and the row lands below the header.
 	let logicalScrollOffset: number;
 	switch (align) {
 		case 'center':
-			logicalScrollOffset = targetOffset + (itemLogicalSize - containerHeight / scale) / 2;
+			logicalScrollOffset = targetOffset + (itemLogicalSize - visibleHeight / scale) / 2;
 			break;
 		case 'end':
-			logicalScrollOffset = targetOffset + itemLogicalSize - containerHeight / scale;
+			logicalScrollOffset = targetOffset + itemLogicalSize - visibleHeight / scale;
 			break;
 		default:
 			logicalScrollOffset = targetOffset;
 	}
 
-	return { targetScrollTop: Math.max(0, logicalScrollOffset * scale), logicalScrollOffset };
+	// Whole pixels only: a fractional scrollTop leaves the sticky header on a
+	// fractional offset and the browser may paint a 1px sliver above it.
+	return { targetScrollTop: Math.round(Math.max(0, logicalScrollOffset * scale - headerHeight)), logicalScrollOffset };
 };

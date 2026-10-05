@@ -31,6 +31,7 @@ const { virtualItems, scrollHeight, scrollRef, getMeasureRef, scrollToIndex } = 
 | `count`        | `number`                                   | Total number of rows                                       |
 | `estimateSize` | `((index: number) => number) \| undefined` | Approximate row height in px, used until a row is measured |
 | `overscan`     | `number \| undefined`                      | Extra rows rendered above/below the viewport (default: 3)  |
+| `headerHeight` | `number \| undefined`                      | Sticky header height in px, excluded from the window (default: 0) |
 
 | Return value    | Type                                                         | Description                                        |
 | --------------- | ------------------------------------------------------------ | -------------------------------------------------- |
