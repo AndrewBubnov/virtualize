@@ -420,3 +420,51 @@ describe('useVirtualizer StrictMode', () => {
 		expect(indexes).toContain(10);
 	});
 });
+
+describe('useVirtualizer count change', () => {
+	it('preserves measured row sizes when count changes', () => {
+		const itemCallbacks: ResizeObserverCallback[] = [];
+		vi.stubGlobal(
+			'ResizeObserver',
+			class {
+				constructor(cb: ResizeObserverCallback) {
+					itemCallbacks.push(cb);
+				}
+				observe = vi.fn();
+				disconnect = vi.fn();
+				unobserve = vi.fn();
+			}
+		);
+
+		const el = createScrollElement(200);
+		const { result, rerender } = renderHook(
+			({ count }: { count: number }) => useVirtualizer({ count, estimateSize: () => 40, overscan: 0 }),
+			{ initialProps: { count: 5 } }
+		);
+
+		act(() => {
+			result.current.scrollRef(el);
+		});
+		expect(result.current.scrollHeight).toBe(5 * 40);
+
+		// Measure row 0 as 100px (callbacks[0] is the container observer).
+		const rowEl = document.createElement('div');
+		act(() => {
+			result.current.getMeasureRef(0)(rowEl);
+		});
+		act(() => {
+			itemCallbacks[1](
+				[{ borderBoxSize: [{ blockSize: 100 }] } as unknown as ResizeObserverEntry],
+				{} as ResizeObserver
+			);
+		});
+		expect(result.current.scrollHeight).toBe(100 + 4 * 40);
+
+		// Growing the count must keep row 0 at 100px instead of resetting it to the estimate.
+		rerender({ count: 8 });
+		expect(result.current.scrollHeight).toBe(100 + 7 * 40);
+		expect(result.current.virtualItems[1].start).toBe(100);
+
+		vi.unstubAllGlobals();
+	});
+});

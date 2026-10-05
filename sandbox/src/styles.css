@@ -1,0 +1,127 @@
+.sandbox-page {
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 32px 24px 64px;
+	font-family: system-ui, -apple-system, sans-serif;
+	color: #222;
+}
+
+.sandbox-code {
+	display: block;
+	background: #f5f5f5;
+	border: 1px solid #e3e3e3;
+	border-radius: 6px;
+	padding: 12px 16px;
+	overflow-x: auto;
+}
+
+.slider-row {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	margin: 12px 0 16px;
+}
+
+.slider-row input[type='range'] {
+	flex: 1;
+	min-width: 0;
+}
+
+.slider-row strong {
+	min-width: 80px;
+	text-align: right;
+}
+
+.demo-layout {
+	display: flex;
+	gap: 24px;
+	align-items: flex-start;
+}
+
+.demo-panel {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+.demo-panel h2:first-child {
+	margin-top: 0;
+}
+
+@media (max-width: 900px) {
+	.demo-layout {
+		flex-direction: column;
+	}
+
+	.demo-panel {
+		width: 100%;
+	}
+}
+
+/* Equal-height intros so both sliders (and both scroll boxes) start on one line. */
+.demo-desc {
+	min-height: 7em;
+}
+
+@media (max-width: 900px) {
+	.demo-desc {
+		min-height: 0;
+	}
+}
+
+/* Virtualized list */
+.scroll-box {
+	overflow: auto;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.scroll-box-inner {
+	position: relative;
+}
+
+.vlist-row {
+	padding: 8px 12px;
+	border-bottom: 1px solid #eee;
+}
+
+/* Virtualized table */
+.vtable-header {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	display: flex;
+	width: max-content;
+	min-width: 100%;
+	background: #f5f5f5;
+	font-weight: 600;
+	border-bottom: 2px solid #ddd;
+}
+
+.vtable-cell {
+	padding: 8px 12px;
+	flex-shrink: 0;
+}
+
+.vtable-row {
+	border-bottom: 1px solid #eee;
+}
+
+.vtable-row-body {
+	display: flex;
+}
+
+.vtable-expand-button {
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 14px;
+	padding: 4px 8px;
+}
+
+.vtable-expanded {
+	padding: 8px 16px;
+	background: #fafafa;
+	border-top: 1px solid #eee;
+	font-size: 13px;
+	color: #555;
+}

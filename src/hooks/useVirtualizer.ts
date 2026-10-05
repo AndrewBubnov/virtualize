@@ -54,7 +54,21 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 		fenwickRef.current = getFenwickTree(count, estimateSize);
 
 	if (prevCountRef.current !== count) {
-		fenwickRef.current = getFenwickTree(count, estimateSize);
+		const prevTree = fenwickRef.current;
+		const prevCount = prevCountRef.current;
+		const nextTree = getFenwickTree(count, estimateSize);
+		// Keep real measurements for the overlapping range: rebuilding from
+		// estimates alone leaves rows mispositioned (overlapping) because
+		// ResizeObserver does not refire for elements whose size did not change.
+		if (prevTree && prevCount > 0) {
+			const keep = Math.min(prevCount, count);
+			for (let i = 0; i < keep; i++) {
+				const delta =
+					prevTree.prefixSum(i + 1) - prevTree.prefixSum(i) - (nextTree.prefixSum(i + 1) - nextTree.prefixSum(i));
+				if (delta !== 0) nextTree.update(i, delta);
+			}
+		}
+		fenwickRef.current = nextTree;
 		prevCountRef.current = count;
 	}
 

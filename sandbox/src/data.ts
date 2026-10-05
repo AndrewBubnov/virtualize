@@ -11,13 +11,23 @@ export const listBodies = [
 export type User = {
 	id: number;
 	name: string;
-	email: string;
 	role: string;
 	bio: string;
 };
 
 const firstNames = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Hank', 'Ivy', 'Jack'];
-const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+const lastNames = [
+	'Smith',
+	'Johnson',
+	'Williams',
+	'Brown',
+	'Jones',
+	'Garcia',
+	'Miller',
+	'Davis',
+	'Rodriguez',
+	'Martinez',
+];
 const roles = ['Admin', 'Editor', 'Viewer', 'Manager', 'Developer'];
 const bios = [
 	'Senior engineer.',
@@ -31,7 +41,7 @@ export const makeUsers = (count: number): User[] =>
 	Array.from({ length: count }, (_, i) => ({
 		id: i + 1,
 		name: `${firstNames[i % firstNames.length]} ${lastNames[i % lastNames.length]}`,
-		email: `user${i + 1}@example.com`,
+		// email: `user${i + 1}@example.com`,
 		role: roles[i % roles.length],
 		bio: bios[i % bios.length],
 	}));

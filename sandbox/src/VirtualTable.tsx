@@ -17,23 +17,20 @@ const columns = [
 		id: 'expand',
 		size: 40,
 		cell: ({ row }) => (
-			<button
-				onClick={() => row.toggleExpanded()}
-				style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: '4px 8px' }}
-			>
+			<button onClick={() => row.toggleExpanded()} className="vtable-expand-button">
 				{row.getIsExpanded() ? '▼' : '▶'}
 			</button>
 		),
 	}),
-	columnHelper.accessor('id', { header: 'ID', size: 60 }),
+	columnHelper.accessor('id', { header: 'ID', size: 50 }),
 	columnHelper.accessor('name', { header: 'Name', size: 150 }),
-	columnHelper.accessor('email', { header: 'Email', size: 200 }),
+	// columnHelper.accessor('email', { header: 'Email', size: 200 }),
 	columnHelper.accessor('role', { header: 'Role', size: 100 }),
 	columnHelper.accessor('bio', { header: 'Bio' }),
 ];
 
 const ExpandedContent = ({ row }: { row: Row<User> }) => (
-	<div style={{ padding: '8px 16px', background: '#fafafa', borderTop: '1px solid #eee', fontSize: 13, color: '#555' }}>
+	<div className="vtable-expanded">
 		<strong>Details:</strong> {expandedDetails(row.original.id)}
 	</div>
 );
@@ -58,24 +55,15 @@ export const VirtualTable = ({ count }: { count: number }) => {
 		overscan: 10,
 	});
 
+	const totalWidth = table.getAllLeafColumns().reduce((sum, column) => sum + column.getSize(), 0);
+
 	return (
-		<div ref={scrollRef} style={{ height: 550, overflow: 'auto', border: '1px solid #ddd', borderRadius: 4 }}>
-			<div style={{ position: 'relative', height: scrollHeight }}>
+		<div ref={scrollRef} className="scroll-box" style={{ height: 400 }}>
+			<div className="scroll-box-inner" style={{ height: scrollHeight, minWidth: totalWidth }}>
 				{table.getHeaderGroups().map(headerGroup => (
-					<div
-						key={headerGroup.id}
-						style={{
-							position: 'sticky',
-							top: 0,
-							zIndex: 1,
-							display: 'flex',
-							background: '#f5f5f5',
-							fontWeight: 600,
-							borderBottom: '2px solid #ddd',
-						}}
-					>
+					<div key={headerGroup.id} className="vtable-header">
 						{headerGroup.headers.map(header => (
-							<div key={header.id} style={{ width: header.getSize(), padding: '8px 12px', flexShrink: 0 }}>
+							<div key={header.id} className="vtable-cell" style={{ width: header.getSize() }}>
 								{flexRender(header.column.columnDef.header, header.getContext())}
 							</div>
 						))}
@@ -87,21 +75,18 @@ export const VirtualTable = ({ count }: { count: number }) => {
 						<div
 							key={row.id}
 							ref={getMeasureRef(virtualRow.index)}
+							className="vtable-row"
 							style={{
 								position: 'absolute',
 								top: 0,
 								left: 0,
-								width: '100%',
+								width: totalWidth,
 								transform: `translateY(${virtualRow.start}px)`,
-								borderBottom: '1px solid #eee',
 							}}
 						>
-							<div style={{ display: 'flex' }}>
+							<div className="vtable-row-body">
 								{row.getVisibleCells().map(cell => (
-									<div
-										key={cell.id}
-										style={{ width: cell.column.getSize(), padding: '8px 12px', flexShrink: 0 }}
-									>
+									<div key={cell.id} className="vtable-cell" style={{ width: cell.column.getSize() }}>
 										{flexRender(cell.column.columnDef.cell, cell.getContext())}
 									</div>
 								))}

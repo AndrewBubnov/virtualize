@@ -17,8 +17,8 @@ export const VirtualizedList = ({ count, renderItem, height, overscan, estimateS
 	});
 
 	return (
-		<div ref={scrollRef} style={{ height, overflow: 'auto', lineHeight: 1.5, border: '1px solid #ddd', borderRadius: 4 }}>
-			<div style={{ position: 'relative', height: scrollHeight }}>
+		<div ref={scrollRef} className="scroll-box" style={{ height, lineHeight: 1.5 }}>
+			<div className="scroll-box-inner" style={{ height: scrollHeight }}>
 				{virtualItems.map(item => (
 					<div
 						key={item.index}
