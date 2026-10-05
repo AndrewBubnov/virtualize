@@ -4,6 +4,8 @@
 
 One hook for vertical virtualized lists and tables with dynamic row heights. Rows are measured automatically via `ResizeObserver` — no manual measuring, no fixed heights. Works for an unlimited number of rows.
 
+> 👉 TL;DR? **[Try the live playground](https://clear-virtualize-sandbox.vercel.app/)** — no setup, click around.
+
 ## Install
 
 ```sh
