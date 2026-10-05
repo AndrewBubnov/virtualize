@@ -1,5 +1,6 @@
+import { StrictMode } from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { render, renderHook, act } from '@testing-library/react';
 import { useVirtualizer } from '../../hooks/useVirtualizer';
 
 function createScrollElement(clientHeight: number = 600) {
@@ -356,5 +357,66 @@ describe('useVirtualizer', () => {
 		expect(items[items.length - 1].end).toBeGreaterThanOrEqual(400);
 
 		vi.unstubAllGlobals();
+	});
+});
+
+describe('useVirtualizer StrictMode', () => {
+	const COUNT = 100;
+	const ROW_HEIGHT = 40;
+	const VIEWPORT = 200;
+
+	const tick = () => new Promise(res => setTimeout(res, 20));
+
+	function Harness() {
+		const { virtualItems, scrollHeight, scrollRef } = useVirtualizer({
+			count: COUNT,
+			estimateSize: () => ROW_HEIGHT,
+			overscan: 0,
+		});
+		return (
+			<div ref={scrollRef} data-testid="scroller">
+				<div data-testid="inner" style={{ position: 'relative', height: scrollHeight }}>
+					{virtualItems.map(item => (
+						<div key={item.index} data-testid={`row-${item.index}`} />
+					))}
+				</div>
+			</div>
+		);
+	}
+
+	const rowIndexes = (container: HTMLElement) =>
+		Array.from(container.querySelectorAll('[data-testid^="row-"]')).map(el =>
+			Number(el.getAttribute('data-testid')!.replace('row-', ''))
+		);
+
+	it('keeps the scroll subscription alive across the StrictMode remount', async () => {
+		const { getByTestId } = render(
+			<StrictMode>
+				<Harness />
+			</StrictMode>
+		);
+		const scroller = getByTestId('scroller') as HTMLElement;
+		Object.defineProperty(scroller, 'clientHeight', { value: VIEWPORT, configurable: true });
+		Object.defineProperty(scroller, 'scrollTop', { value: 0, writable: true, configurable: true });
+
+		// Sync with the mocked viewport: first rows 0..5, full estimated height.
+		await act(async () => {
+			scroller.dispatchEvent(new Event('scroll'));
+			await tick();
+		});
+		expect(getByTestId('inner').style.height).toBe(`${COUNT * ROW_HEIGHT}px`);
+		expect(rowIndexes(scroller).slice(0, 6)).toEqual([0, 1, 2, 3, 4, 5]);
+
+		// Real user scroll must move the window — this stayed stuck at 0
+		// when subscriptions were torn down by the StrictMode unmount simulation.
+		await act(async () => {
+			scroller.scrollTop = 400;
+			scroller.dispatchEvent(new Event('scroll'));
+			await tick();
+		});
+		const indexes = rowIndexes(scroller);
+		expect(indexes.length).toBeGreaterThan(0);
+		expect(indexes[0]).toBeGreaterThan(0);
+		expect(indexes).toContain(10);
 	});
 });

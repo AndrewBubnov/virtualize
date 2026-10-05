@@ -34,6 +34,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 	const [scrollOffset, setScrollOffset] = useState<{ value: number }>({ value: 0 });
 	const [forcedRange, setForcedRange] = useState<{ start: number; end: number } | null>(null);
 	const scrollElementRef = useRef<HTMLElement | null>(null);
+	const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
 	const rafRef = useRef<number | null>(null);
 	const observersRef = useRef<Map<number, { observer: ResizeObserver; element: HTMLElement }>>(new Map());
 	const containerObserverRef = useRef<ResizeObserver | null>(null);
@@ -125,23 +126,7 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 		[count, forcedRange, overscan]
 	);
 
-	const measureElement = useCallback((element: HTMLElement | null, index: number) => {
-		if (!element) {
-			const entry = observersRef.current.get(index);
-			if (entry) {
-				entry.observer.disconnect();
-				observersRef.current.delete(index);
-			}
-			return;
-		}
-
-		const existing = observersRef.current.get(index);
-		if (existing && existing.element === element) return;
-		if (existing) {
-			existing.observer.disconnect();
-			observersRef.current.delete(index);
-		}
-
+	const observeItem = useCallback((index: number, element: HTMLElement) => {
 		if (typeof ResizeObserver === 'undefined') return;
 
 		const observer = new ResizeObserver(([entry]) => {
@@ -163,6 +148,29 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 		observer.observe(element);
 		observersRef.current.set(index, { observer, element });
 	}, []);
+
+	const measureElement = useCallback(
+		(element: HTMLElement | null, index: number) => {
+			if (!element) {
+				const entry = observersRef.current.get(index);
+				if (entry) {
+					entry.observer.disconnect();
+					observersRef.current.delete(index);
+				}
+				return;
+			}
+
+			const existing = observersRef.current.get(index);
+			if (existing && existing.element === element) return;
+			if (existing) {
+				existing.observer.disconnect();
+				observersRef.current.delete(index);
+			}
+
+			observeItem(index, element);
+		},
+		[observeItem]
+	);
 
 	const getMeasureRef = useCallback(
 		(index: number) => {
@@ -294,42 +302,42 @@ export function useVirtualizer({ count, estimateSize, overscan = DEFAULT_OVERSCA
 		});
 	}, [releaseSettle, countRef]);
 
-	const scrollRef = useCallback(
-		(element: HTMLElement | null) => {
-			if (scrollElementRef.current) scrollElementRef.current.removeEventListener('scroll', handleScroll);
-			containerObserverRef.current?.disconnect();
-			containerObserverRef.current = null;
+	const scrollRef = useCallback((element: HTMLElement | null) => {
+		scrollElementRef.current = element;
+		setScrollElement(element);
+		setScrollOffset(element ? { value: element.scrollTop } : { value: 0 });
+	}, []);
 
-			scrollElementRef.current = element;
+	// Subscriptions live here (not in the ref callback) so React StrictMode
+	// remounts — which re-run effects but do not re-fire ref callbacks —
+	// resubscribe instead of going silent. Entries are kept across the
+	// simulated unmount so setup can re-observe known rows.
+	useEffect(() => {
+		const el = scrollElement;
+		const itemObservers = observersRef.current;
 
-			if (element) {
-				element.addEventListener('scroll', handleScroll, { passive: true });
-				if (typeof ResizeObserver !== 'undefined') {
-					const observer = new ResizeObserver(() => {
-						setScrollOffset(prevState => ({ ...prevState }));
-					});
-					observer.observe(element);
-					containerObserverRef.current = observer;
-				}
+		if (el) {
+			el.addEventListener('scroll', handleScroll, { passive: true });
+			if (typeof ResizeObserver !== 'undefined') {
+				const observer = new ResizeObserver(() => {
+					setScrollOffset(prevState => ({ ...prevState }));
+				});
+				observer.observe(el);
+				containerObserverRef.current = observer;
 			}
-			setScrollOffset(element ? { value: element?.scrollTop } : { value: 0 });
-		},
-		[handleScroll]
-	);
+		}
 
-	useEffect(
-		() => () => {
+		for (const [index, { element }] of Array.from(itemObservers)) observeItem(index, element);
+
+		return () => {
 			if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
 			if (tickRafRef.current !== null) cancelAnimationFrame(tickRafRef.current);
-			observersRef.current.forEach(entry => entry.observer.disconnect());
-			observersRef.current.clear();
+			el?.removeEventListener('scroll', handleScroll);
 			containerObserverRef.current?.disconnect();
 			containerObserverRef.current = null;
-			scrollElementRef.current?.removeEventListener('scroll', handleScroll);
-			refCacheRef.current.clear();
-		},
-		[handleScroll]
-	);
+			itemObservers.forEach(entry => entry.observer.disconnect());
+		};
+	}, [scrollElement, handleScroll, observeItem]);
 
 	const { virtualItems, scrollHeight } = useMemo(
 		() => computeItems(scrollOffset.value),
