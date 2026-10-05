@@ -92,5 +92,8 @@
     "vite-plugin-eslint": "^1.8.1",
     "vite-tsconfig-paths": "^4.2.0",
     "vitest": "^1.6.1"
+  },
+  "dependencies": {
+    "clear-virtualizer": "^0.1.5"
   }
 }

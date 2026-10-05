@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ScrollAlign } from '../../src';
+import type { ScrollAlign } from 'clear-virtualizer';
 
 type ScrollToFormProps = {
 	count: number;
